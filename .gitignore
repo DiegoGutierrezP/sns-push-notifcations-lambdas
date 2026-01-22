@@ -1,0 +1,45 @@
+# Binaries for the current platform
+*.exe
+*.dll
+*.so
+*.dylib
+
+# For generated binaries at the root of the project
+# */
+
+# Test files
+*_test
+testdata/
+
+# Go module cache
+.cache/
+go.sum
+vendor/
+
+# Local configuration files
+.env
+# .env.*
+config.local.yaml
+config.local.json
+
+# IDE-specific files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+
+# Logs and temporary files
+log/
+tmp/
+*.log
+*.tmp
+
+# Other generated files
+dist/
+build/
+
+keys/
+
+# config.yml

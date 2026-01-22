@@ -1,0 +1,138 @@
+package repositories
+
+import (
+	"context"
+	"errors"
+	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
+	"lmbd-digital-push-notifications/internal/domain/entities"
+	"lmbd-digital-push-notifications/internal/persistence/mappers"
+	"lmbd-digital-push-notifications/internal/persistence/models"
+	"lmbd-digital-push-notifications/internal/shared/utils"
+	"strconv"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+)
+
+type DeviceRepository struct {
+	table  string
+	client *dynamodb.Client
+}
+
+func NewDeviceRepository(client *dynamodb.Client) repositories.IDeviceRepository {
+	return &DeviceRepository{
+		table:  "devices",
+		client: client,
+	}
+}
+
+func (r *DeviceRepository) Save(ctx context.Context, d *entities.DeviceEntity) error {
+
+	model := mappers.ToDeviceModel(d)
+
+	model.GSI1PK = "TOKEN#" + model.DeviceToken
+
+	item, err := attributevalue.MarshalMap(model)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.client.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName: &r.table,
+		Item:      item,
+	})
+
+	return err
+}
+
+func (r *DeviceRepository) GetByID(ctx context.Context, id string) (*entities.DeviceEntity, error) {
+	out, err := r.client.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: &r.table,
+		Key: map[string]types.AttributeValue{
+			"pk": &types.AttributeValueMemberS{Value: id},
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if out.Item == nil {
+		return nil, errors.New("device not found")
+	}
+
+	var device models.DeviceModel
+	if err := attributevalue.UnmarshalMap(out.Item, &device); err != nil {
+		return nil, err
+	}
+
+	return mappers.ToDeviceEntity(&device), nil
+}
+
+func (r *DeviceRepository) Delete(ctx context.Context, id string) error {
+	_, err := r.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
+		TableName: &r.table,
+		Key: map[string]types.AttributeValue{
+			"pk": &types.AttributeValueMemberS{Value: id},
+		},
+	})
+
+	return err
+}
+
+func (r *DeviceRepository) UpdateStatus(ctx context.Context, id string, status int) error {
+	_, err := r.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+		TableName: &r.table,
+		Key: map[string]types.AttributeValue{
+			"pk": &types.AttributeValueMemberS{Value: id},
+		},
+		UpdateExpression:         aws.String("SET #s = :status"),
+		ExpressionAttributeNames: map[string]string{"#s": "status"},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":status": &types.AttributeValueMemberN{Value: strconv.Itoa(status)},
+		},
+	})
+
+	return err
+}
+
+func (r *DeviceRepository) List(ctx context.Context) ([]*entities.DeviceEntity, error) {
+	out, err := r.client.Scan(ctx, &dynamodb.ScanInput{
+		TableName: &r.table,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var devices []*models.DeviceModel
+	if err := attributevalue.UnmarshalListOfMaps(out.Items, &devices); err != nil {
+		return nil, err
+	}
+
+	entities := utils.Map(devices, func(d *models.DeviceModel) *entities.DeviceEntity {
+		return mappers.ToDeviceEntity(d)
+	})
+
+	return entities, nil
+}
+
+func (r *DeviceRepository) ExistsByToken(ctx context.Context, token string) (bool, error) {
+	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              &r.table,
+		IndexName:              aws.String("GSI1"),
+		KeyConditionExpression: aws.String("gsi1pk = :v"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":v": &types.AttributeValueMemberS{Value: "TOKEN#" + token},
+		},
+		Limit: aws.Int32(1),
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	return len(out.Items) > 0, nil
+}
