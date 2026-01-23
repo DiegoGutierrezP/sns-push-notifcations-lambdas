@@ -22,13 +22,18 @@ type SubscriptionRepository struct {
 
 func NewSubscriptionRepository(client *dynamodb.Client) repositories.ISubscriptionRepository {
 	return &SubscriptionRepository{
-		table:  "subscriptions",
+		table:  "pushnoti-subscriptions",
 		client: client,
 	}
 }
 
 func (r *SubscriptionRepository) Save(ctx context.Context, d *entities.SubscriptionEntity) error {
-	item, err := attributevalue.MarshalMap(d)
+	model := mappers.ToSubscribeModel(d)
+
+	model.DeviceID = models.SubscriptionPk(model.DeviceID)
+	model.TopicID = models.SubscriptionSk(model.TopicID)
+
+	item, err := attributevalue.MarshalMap(model)
 	if err != nil {
 		return err
 	}
@@ -45,8 +50,8 @@ func (r *SubscriptionRepository) Get(ctx context.Context, deviceId, topicId stri
 	out, err := r.client.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: &r.table,
 		Key: map[string]types.AttributeValue{
-			"pk": &types.AttributeValueMemberS{Value: deviceId},
-			"sk": &types.AttributeValueMemberS{Value: topicId},
+			"pk": &types.AttributeValueMemberS{Value: models.SubscriptionPk(deviceId)},
+			"sk": &types.AttributeValueMemberS{Value: models.SubscriptionSk(topicId)},
 		},
 	})
 
@@ -70,8 +75,8 @@ func (r *SubscriptionRepository) Delete(ctx context.Context, deviceId, topicId s
 	_, err := r.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: &r.table,
 		Key: map[string]types.AttributeValue{
-			"pk": &types.AttributeValueMemberS{Value: deviceId},
-			"sk": &types.AttributeValueMemberS{Value: topicId},
+			"pk": &types.AttributeValueMemberS{Value: models.SubscriptionPk(deviceId)},
+			"sk": &types.AttributeValueMemberS{Value: models.SubscriptionSk(topicId)},
 		},
 	})
 
@@ -83,7 +88,7 @@ func (r *SubscriptionRepository) ListByDevice(ctx context.Context, deviceId stri
 		TableName:              &r.table,
 		KeyConditionExpression: aws.String("pk = :pk"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":pk": &types.AttributeValueMemberS{Value: deviceId},
+			":pk": &types.AttributeValueMemberS{Value: models.SubscriptionPk(deviceId)},
 		},
 	})
 
@@ -107,8 +112,8 @@ func (r *SubscriptionRepository) UpdateStatus(ctx context.Context, deviceId, top
 	_, err := r.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
 		TableName: &r.table,
 		Key: map[string]types.AttributeValue{
-			"pk": &types.AttributeValueMemberS{Value: deviceId},
-			"sk": &types.AttributeValueMemberS{Value: topicId},
+			"pk": &types.AttributeValueMemberS{Value: models.SubscriptionPk(deviceId)},
+			"sk": &types.AttributeValueMemberS{Value: models.SubscriptionSk(topicId)},
 		},
 		UpdateExpression: aws.String("SET isActive = :v"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{

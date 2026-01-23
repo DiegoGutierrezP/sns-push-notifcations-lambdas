@@ -23,7 +23,7 @@ type DeviceRepository struct {
 
 func NewDeviceRepository(client *dynamodb.Client) repositories.IDeviceRepository {
 	return &DeviceRepository{
-		table:  "devices",
+		table:  "pushnoti-devices",
 		client: client,
 	}
 }
@@ -32,7 +32,8 @@ func (r *DeviceRepository) Save(ctx context.Context, d *entities.DeviceEntity) e
 
 	model := mappers.ToDeviceModel(d)
 
-	model.GSI1PK = "TOKEN#" + model.DeviceToken
+	model.ID = models.DevicePk(model.ID)
+	model.GSI1PK = models.DeviceGSI1Pk(model.DeviceToken)
 
 	item, err := attributevalue.MarshalMap(model)
 	if err != nil {
@@ -40,18 +41,22 @@ func (r *DeviceRepository) Save(ctx context.Context, d *entities.DeviceEntity) e
 	}
 
 	_, err = r.client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: &r.table,
-		Item:      item,
+		TableName:           &r.table,
+		Item:                item,
+		ConditionExpression: aws.String("attribute_not_exists(pk)"),
 	})
 
 	return err
 }
 
 func (r *DeviceRepository) GetByID(ctx context.Context, id string) (*entities.DeviceEntity, error) {
+
+	pk := models.DevicePk(id)
+
 	out, err := r.client.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: &r.table,
 		Key: map[string]types.AttributeValue{
-			"pk": &types.AttributeValueMemberS{Value: id},
+			"pk": &types.AttributeValueMemberS{Value: pk},
 		},
 	})
 
@@ -72,10 +77,13 @@ func (r *DeviceRepository) GetByID(ctx context.Context, id string) (*entities.De
 }
 
 func (r *DeviceRepository) Delete(ctx context.Context, id string) error {
+
+	pk := models.DevicePk(id)
+
 	_, err := r.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: &r.table,
 		Key: map[string]types.AttributeValue{
-			"pk": &types.AttributeValueMemberS{Value: id},
+			"pk": &types.AttributeValueMemberS{Value: pk},
 		},
 	})
 
@@ -86,7 +94,7 @@ func (r *DeviceRepository) UpdateStatus(ctx context.Context, id string, status i
 	_, err := r.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
 		TableName: &r.table,
 		Key: map[string]types.AttributeValue{
-			"pk": &types.AttributeValueMemberS{Value: id},
+			"pk": &types.AttributeValueMemberS{Value: models.DevicePk(id)},
 		},
 		UpdateExpression:         aws.String("SET #s = :status"),
 		ExpressionAttributeNames: map[string]string{"#s": "status"},
@@ -120,12 +128,15 @@ func (r *DeviceRepository) List(ctx context.Context) ([]*entities.DeviceEntity, 
 }
 
 func (r *DeviceRepository) ExistsByToken(ctx context.Context, token string) (bool, error) {
+
+	gsi1pk := models.DeviceGSI1Pk(token)
+
 	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
 		TableName:              &r.table,
 		IndexName:              aws.String("GSI1"),
 		KeyConditionExpression: aws.String("gsi1pk = :v"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":v": &types.AttributeValueMemberS{Value: "TOKEN#" + token},
+			":v": &types.AttributeValueMemberS{Value: gsi1pk},
 		},
 		Limit: aws.Int32(1),
 	})

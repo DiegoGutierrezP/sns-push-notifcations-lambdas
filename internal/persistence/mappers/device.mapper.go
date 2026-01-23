@@ -3,6 +3,9 @@ package mappers
 import (
 	"lmbd-digital-push-notifications/internal/domain/entities"
 	"lmbd-digital-push-notifications/internal/persistence/models"
+	"strings"
+
+	"github.com/google/uuid"
 )
 
 func ToDeviceEntity(model *models.DeviceModel) *entities.DeviceEntity {
@@ -11,7 +14,8 @@ func ToDeviceEntity(model *models.DeviceModel) *entities.DeviceEntity {
 	}
 
 	return &entities.DeviceEntity{
-		ID:                 model.ID,
+		// ID:                 uuid.MustParse(model.ID),
+		ID:                 uuid.MustParse(strings.TrimPrefix(model.ID, models.DevicePkPrefix)),
 		DeviceToken:        model.DeviceToken,
 		DeviceName:         model.DeviceName,
 		EndpointArn:        model.EndpointArn,
@@ -32,7 +36,7 @@ func ToDeviceModel(entity *entities.DeviceEntity) *models.DeviceModel {
 	}
 
 	return &models.DeviceModel{
-		ID:                 entity.ID,
+		ID:                 models.DevicePk(entity.ID.String()),
 		DeviceToken:        entity.DeviceToken,
 		DeviceName:         entity.DeviceName,
 		EndpointArn:        entity.EndpointArn,

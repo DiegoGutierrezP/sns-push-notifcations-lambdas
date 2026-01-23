@@ -19,7 +19,8 @@ import (
 )
 
 type SnsService struct {
-	client *sns.Client
+	client         *sns.Client
+	platformAppArn string
 }
 
 func NewSnsService(ctx context.Context, cfg *appConfig.Config) (services.ISnsService, error) {
@@ -41,7 +42,8 @@ func NewSnsService(ctx context.Context, cfg *appConfig.Config) (services.ISnsSer
 	client := sns.NewFromConfig(awsCfg)
 
 	return &SnsService{
-		client: client,
+		client:         client,
+		platformAppArn: cfg.Sns.PlatformAppArn,
 	}, nil
 
 }
@@ -290,13 +292,13 @@ func (s *SnsService) PublishToTarget(ctx context.Context, targetArn string, mess
 	return s.Publish(ctx, nil, &targetArn, message, opts)
 }
 
-func (s *SnsService) CreateEndpoint(ctx context.Context, deviceToken string, platformApplicationArn string) (string, error) {
+func (s *SnsService) CreateEndpoint(ctx context.Context, deviceToken string) (string, error) {
 
 	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	output, err := s.client.CreatePlatformEndpoint(cctx, &sns.CreatePlatformEndpointInput{
-		PlatformApplicationArn: aws.String(platformApplicationArn),
+		PlatformApplicationArn: aws.String(s.platformAppArn),
 		Token:                  aws.String(deviceToken),
 		Attributes: map[string]string{
 			"Enabled": "true",

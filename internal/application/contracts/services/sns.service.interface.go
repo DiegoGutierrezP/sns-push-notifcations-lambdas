@@ -32,6 +32,6 @@ type ISnsService interface {
 	Publish(ctx context.Context, topicArn *string, targetArn *string, message any, opts *SnsPublishOptions) error
 	PublishToTopic(ctx context.Context, topicArn string, message any, opts *SnsPublishOptions) error
 	PublishToTarget(ctx context.Context, targetArn string, message any, opts *SnsPublishOptions) error
-	CreateEndpoint(ctx context.Context, deviceToken string, platformApplicationArn string) (string, error)
+	CreateEndpoint(ctx context.Context, deviceToken string) (string, error)
 	UpdateEndpoint(ctx context.Context, endpointArn string, newToken string) error
 }

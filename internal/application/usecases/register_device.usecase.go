@@ -14,7 +14,6 @@ import (
 type RegisterDeviceUseCase struct {
 	snsService       services.ISnsService
 	deviceRepository repositories.IDeviceRepository
-	platformAppArn   string
 }
 
 func NewRegisterDeviceUseCase(
@@ -25,7 +24,6 @@ func NewRegisterDeviceUseCase(
 	return &RegisterDeviceUseCase{
 		snsService:       snsService,
 		deviceRepository: deviceRepository,
-		platformAppArn:   config.Sns.PlatformAppArn,
 	}
 }
 
@@ -42,7 +40,7 @@ func (uc *RegisterDeviceUseCase) Execute(ctx context.Context, request dtos.Regis
 	}
 
 	// create endpoint arn for new devices
-	endpointArn, err := uc.snsService.CreateEndpoint(ctx, request.DeviceToken, uc.platformAppArn)
+	endpointArn, err := uc.snsService.CreateEndpoint(ctx, request.DeviceToken)
 
 	if err != nil {
 		return nil, errors.New("Ocurrio un error al crear el endpoint ARN")

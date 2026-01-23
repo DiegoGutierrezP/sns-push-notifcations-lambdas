@@ -2,12 +2,14 @@ package models
 
 import (
 	"time"
+)
 
-	"github.com/google/uuid"
+const (
+	DevicePkPrefix string = "DEVICE#"
 )
 
 type DeviceModel struct {
-	ID                     uuid.UUID `dynamodbav:"pk"`
+	ID                     string    `dynamodbav:"pk"`
 	DeviceToken            string    `dynamodbav:"deviceToken"`
 	PlatformApplicationArn string    `dynamodbav:"platformApplicationArn"`
 	EndpointArn            string    `dynamodbav:"endpointArn"`
@@ -21,9 +23,17 @@ type DeviceModel struct {
 	CreatedAt              time.Time `dynamodbav:"createdAt"`
 	UpdatedAt              time.Time `dynamodbav:"updatedAt"`
 
-	GSI1PK string `dynamodbav:"gsi1pk"`
+	GSI1PK string `dynamodbav:"gsi1pk"` // device token
 }
 
 func (DeviceModel) TableName() string {
 	return "devices"
+}
+
+func DevicePk(deviceId string) string {
+	return DevicePkPrefix + deviceId
+}
+
+func DeviceGSI1Pk(token string) string {
+	return "TOKEN#" + token
 }

@@ -3,6 +3,7 @@ package mappers
 import (
 	"lmbd-digital-push-notifications/internal/domain/entities"
 	"lmbd-digital-push-notifications/internal/persistence/models"
+	"strings"
 )
 
 func ToSubscribeEntity(model *models.SubscriptionModel) *entities.SubscriptionEntity {
@@ -11,8 +12,8 @@ func ToSubscribeEntity(model *models.SubscriptionModel) *entities.SubscriptionEn
 	}
 
 	return &entities.SubscriptionEntity{
-		DeviceId:        model.DeviceID,
-		TopicId:         model.TopicID,
+		DeviceId:        strings.TrimPrefix(model.DeviceID, models.SubscriptionPkPrefix),
+		TopicId:         strings.TrimPrefix(model.DeviceID, models.SubscriptionSkPrefix),
 		SubscriptionArn: model.SubscriptionArn,
 		Attributes:      model.Attributes,
 		IsActive:        model.IsActive,
@@ -27,8 +28,8 @@ func ToSubscribeModel(entity *entities.SubscriptionEntity) *models.SubscriptionM
 	}
 
 	return &models.SubscriptionModel{
-		DeviceID:        entity.DeviceId,
-		TopicID:         entity.TopicId,
+		DeviceID:        models.SubscriptionPk(entity.DeviceId),
+		TopicID:         models.SubscriptionSk(entity.TopicId),
 		SubscriptionArn: entity.SubscriptionArn,
 		Attributes:      entity.Attributes,
 		IsActive:        entity.IsActive,
