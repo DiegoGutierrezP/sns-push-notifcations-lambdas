@@ -31,7 +31,7 @@ func init() {
 }
 
 func main() {
-	lambda.Start(handler)
+	lambda.Start(handler.Handler)
 }
 
 // func main() {

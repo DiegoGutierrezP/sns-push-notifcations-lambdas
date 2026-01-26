@@ -10,6 +10,8 @@ import (
 	"lmbd-digital-push-notifications/internal/shared/config"
 	"lmbd-digital-push-notifications/internal/shared/utils"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -47,7 +49,7 @@ func (r *DeviceRepository) Save(ctx context.Context, d *entities.DeviceEntity) e
 	_, err = r.client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName:           &r.table,
 		Item:                item,
-		ConditionExpression: aws.String("attribute_not_exists(pk)"),
+		ConditionExpression: aws.String("attribute_not_exists(pk) AND attribute_not_exists(gsi1pk)"),
 	})
 
 	return err
@@ -152,32 +154,138 @@ func (r *DeviceRepository) ExistsByToken(ctx context.Context, token string) (boo
 	return len(out.Items) > 0, nil
 }
 
-func (r *DeviceRepository) GetByToken(ctx context.Context, token string) (*entities.DeviceEntity, error) {
+func (r *DeviceRepository) ExistsByTokenExcept(
+	ctx context.Context,
+	token string,
+	exceptDeviceID string,
+) (bool, error) {
 
 	gsi1pk := models.DeviceGSI1Pk(token)
+	exceptPK := models.DevicePk(exceptDeviceID)
 
 	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
-		TableName:              &r.table,
-		IndexName:              aws.String("TokenIndex"),
+		TableName: &r.table,
+		IndexName: aws.String("TokenIndex"),
+
 		KeyConditionExpression: aws.String("gsi1pk = :v"),
+
+		FilterExpression: aws.String("pk <> :except"),
+
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":v": &types.AttributeValueMemberS{Value: gsi1pk},
+			":v":      &types.AttributeValueMemberS{Value: gsi1pk},
+			":except": &types.AttributeValueMemberS{Value: exceptPK},
 		},
+
 		Limit: aws.Int32(1),
 	})
 
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
-	if len(out.Items) == 0 {
-		return nil, errors.New("device not found")
+	return len(out.Items) > 0, nil
+}
+
+func (r *DeviceRepository) UpdateFields(
+	ctx context.Context,
+	id string,
+	fields map[string]any,
+) error {
+
+	if len(fields) == 0 {
+		return nil
 	}
 
-	var device models.DeviceModel
-	if err := attributevalue.UnmarshalMap(out.Items[0], &device); err != nil {
-		return nil, err
+	pk := models.DevicePk(id)
+
+	updateExpr := "SET "
+	exprValues := map[string]types.AttributeValue{}
+	exprNames := map[string]string{}
+
+	i := 0
+	for k, v := range fields {
+		nameKey := "#f" + strconv.Itoa(i)
+		valueKey := ":v" + strconv.Itoa(i)
+
+		updateExpr += nameKey + " = " + valueKey + ","
+
+		exprNames[nameKey] = k
+		av, err := attributevalue.Marshal(v)
+		if err != nil {
+			return err
+		}
+		exprValues[valueKey] = av
+		i++
 	}
 
-	return mappers.ToDeviceEntity(&device), nil
+	updateExpr = strings.TrimSuffix(updateExpr, ",")
+
+	_, err := r.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+		TableName: &r.table,
+		Key: map[string]types.AttributeValue{
+			"pk": &types.AttributeValueMemberS{Value: pk},
+		},
+		UpdateExpression:          aws.String(updateExpr),
+		ExpressionAttributeNames:  exprNames,
+		ExpressionAttributeValues: exprValues,
+		ConditionExpression:       aws.String("attribute_exists(pk)"),
+	})
+
+	return err
+}
+
+func (r *DeviceRepository) Update(
+	ctx context.Context,
+	id string,
+	update *repositories.UpdateDeviceFields,
+) error {
+
+	fields := utils.StructToMap(update)
+
+	if len(fields) == 0 {
+		return nil
+	}
+
+	fields["updatedAt"] = time.Now().UTC()
+
+	delete(fields, "pk")
+	delete(fields, "deviceToken")
+	delete(fields, "gsi1pk")
+
+	pk := models.DevicePk(id)
+
+	updateExpr := "SET "
+	exprValues := map[string]types.AttributeValue{}
+	exprNames := map[string]string{}
+
+	i := 0
+	for k, v := range fields {
+		nameKey := "#f" + strconv.Itoa(i)
+		valueKey := ":v" + strconv.Itoa(i)
+
+		updateExpr += nameKey + " = " + valueKey + ","
+
+		exprNames[nameKey] = k
+		av, err := attributevalue.Marshal(v)
+		if err != nil {
+			return err
+		}
+		exprValues[valueKey] = av
+		i++
+	}
+
+	updateExpr = strings.TrimSuffix(updateExpr, ",")
+
+	_, err := r.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+		TableName: &r.table,
+		Key: map[string]types.AttributeValue{
+			"pk": &types.AttributeValueMemberS{Value: pk},
+		},
+		UpdateExpression:          aws.String(updateExpr),
+		ExpressionAttributeNames:  exprNames,
+		ExpressionAttributeValues: exprValues,
+		ConditionExpression:       aws.String("attribute_exists(pk)"),
+	})
+
+	return err
 }

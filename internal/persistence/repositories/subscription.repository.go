@@ -39,8 +39,9 @@ func (r *SubscriptionRepository) Save(ctx context.Context, d *entities.Subscript
 	}
 
 	_, err = r.client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: &r.table,
-		Item:      item,
+		TableName:           &r.table,
+		Item:                item,
+		ConditionExpression: aws.String("attribute_not_exists(pk) AND attribute_not_exists(sk)"),
 	})
 
 	return err

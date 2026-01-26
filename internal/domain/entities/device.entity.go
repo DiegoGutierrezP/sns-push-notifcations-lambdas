@@ -40,8 +40,11 @@ func NewDevice(
 		OperationSystem:    os,
 		SystemVersion:      systemVersion,
 		Status:             1,
-		// PlatformApplicationArn: config.Config.Sns.AccessKeyId,
-		CreatedAt: now,
-		UpdatedAt: now,
+		CreatedAt:          now,
+		UpdatedAt:          now,
 	}
+}
+
+func (e *DeviceEntity) ReadyToUpdate() {
+
 }

@@ -1,0 +1,15 @@
+package dtos
+
+type UpdateDeviceRequest struct {
+	DeviceId           string  `json:"deviceId" `
+	DeviceName         *string `json:"deviceName"`
+	DeviceToken        *string `json:"deviceToken"`
+	ApplicationVersion *string `json:"applicationVersion" `
+	CalimacoId         *int64  `json:"calimacoId" `
+	OperatingSystem    *string `json:"operatingSystem" `
+	SystemVersion      *string `json:"systemVersion" `
+}
+
+type UpdateDeviceResponse struct {
+	DeviceId string
+}
