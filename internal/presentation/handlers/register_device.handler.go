@@ -14,11 +14,11 @@ import (
 )
 
 type RegisterDeviceHandler struct {
-	usecase usecases.RegisterDeviceUseCase
+	usecase *usecases.RegisterDeviceUseCase
 }
 
 func NewRegisterDeviceHandler(
-	usecase usecases.RegisterDeviceUseCase,
+	usecase *usecases.RegisterDeviceUseCase,
 ) *RegisterDeviceHandler {
 	return &RegisterDeviceHandler{
 		usecase: usecase,
@@ -29,6 +29,12 @@ func (h *RegisterDeviceHandler) Handler(
 	ctx context.Context,
 	req events.APIGatewayProxyRequest,
 ) (events.APIGatewayProxyResponse, error) {
+	log.Println("🟢 Entró al handler RegisterDevice")
+	log.Printf("body raw: %s", req.Body)
+	log.Printf("APIGW requestId: %q", req.RequestContext.RequestID)
+
+	ctx = context.WithValue(ctx, "RequestID", req.RequestContext.RequestID)
+
 	var payload dtos.RegisterDeviceRequest
 
 	if err := json.Unmarshal([]byte(req.Body), &payload); err != nil {

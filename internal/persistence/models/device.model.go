@@ -5,7 +5,8 @@ import (
 )
 
 const (
-	DevicePkPrefix string = "DEVICE#"
+	DevicePkPrefix     string = "DEVICE#"
+	DeviceGSI1PkPrefix string = "TOKEN#"
 )
 
 type DeviceModel struct {
@@ -35,5 +36,5 @@ func DevicePk(deviceId string) string {
 }
 
 func DeviceGSI1Pk(token string) string {
-	return "TOKEN#" + token
+	return DeviceGSI1PkPrefix + token
 }

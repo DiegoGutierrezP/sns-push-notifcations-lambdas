@@ -1,4 +1,4 @@
-package deviceunsubscribe
+package main
 
 import (
 	"lmbd-digital-push-notifications/internal/application"
@@ -16,7 +16,7 @@ var handler *handlers.DeviceUnsubscribeHandler
 
 func init() {
 	c := dig.New()
-	c.Provide(config.GetConfig())
+	c.Provide(config.GetConfig)
 
 	persistence.RegisterContainer(c)
 	infrastructure.RegisterContainer(c)
@@ -31,5 +31,5 @@ func init() {
 }
 
 func main() {
-	lambda.Start(handler)
+	lambda.Start(handler.Handler)
 }

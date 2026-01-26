@@ -14,11 +14,11 @@ import (
 )
 
 type DeviceSubscribeHandler struct {
-	usecase usecases.DeviceSubscribeUseCase
+	usecase *usecases.DeviceSubscribeUseCase
 }
 
 func NewDeviceSubscribeHandler(
-	usecase usecases.DeviceSubscribeUseCase,
+	usecase *usecases.DeviceSubscribeUseCase,
 ) *DeviceSubscribeHandler {
 	return &DeviceSubscribeHandler{
 		usecase: usecase,

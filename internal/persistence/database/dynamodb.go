@@ -12,14 +12,14 @@ import (
 	appConfig "lmbd-digital-push-notifications/internal/shared/config"
 )
 
-func NewDynamoDbConnection(ctx context.Context, cfg *appConfig.Config) *dynamodb.Client {
+func NewDynamoDbConnection(cfg *appConfig.Config) *dynamodb.Client {
 	creds := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
 		cfg.DynamoDb.AccessKeyId,
 		cfg.DynamoDb.SecretAccessKey,
 		"",
 	))
 
-	awsCfg, err := config.LoadDefaultConfig(ctx,
+	awsCfg, err := config.LoadDefaultConfig(context.Background(),
 		config.WithRegion(cfg.DynamoDb.Region),
 		config.WithCredentialsProvider(creds),
 	)

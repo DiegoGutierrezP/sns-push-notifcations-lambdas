@@ -1,4 +1,4 @@
-package publishnotification
+package main
 
 import (
 	"lmbd-digital-push-notifications/internal/application"
@@ -16,7 +16,7 @@ var handler *handlers.PublishNotificationHandler
 
 func init() {
 	c := dig.New()
-	c.Provide(config.GetConfig())
+	c.Provide(config.GetConfig)
 
 	persistence.RegisterContainer(c)
 	infrastructure.RegisterContainer(c)

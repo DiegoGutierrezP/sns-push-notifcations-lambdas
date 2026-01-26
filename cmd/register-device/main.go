@@ -1,4 +1,4 @@
-package registerdevice
+package main
 
 import (
 	"lmbd-digital-push-notifications/internal/application"
@@ -12,18 +12,22 @@ import (
 	"go.uber.org/dig"
 )
 
-var handler *handlers.DeviceSubscribeHandler
+var handler *handlers.RegisterDeviceHandler
 
 func init() {
 	c := dig.New()
-	c.Provide(config.GetConfig())
+	c.Provide(config.GetConfig)
+
+	// c.Provide(func() context.Context {
+	// 	return context.Background()
+	// })
 
 	persistence.RegisterContainer(c)
 	infrastructure.RegisterContainer(c)
 	application.RegisterContainer(c)
 	presentation.RegisterContainer(c)
 
-	if err := c.Invoke(func(h *handlers.DeviceSubscribeHandler) {
+	if err := c.Invoke(func(h *handlers.RegisterDeviceHandler) {
 		handler = h
 	}); err != nil {
 		panic(err)
@@ -31,5 +35,5 @@ func init() {
 }
 
 func main() {
-	lambda.Start(handler)
+	lambda.Start(handler.Handler)
 }

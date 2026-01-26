@@ -1,6 +1,59 @@
 version: "3.9"
 
 services:
+
+  register-device:
+    image: digital-push-noti-lambdas
+    container_name: register-device
+    # command: ["register-device"]
+    environment:
+      - LAMBDA_BIN=register-device
+    env_file:
+      - .env
+    # entrypoint: ["/bin/sh", "-c", "cp /var/task/$LAMBDA_BIN /var/task/bootstrap && exec /var/task/bootstrap"]
+    volumes:
+      - ./bin:/var/task
+      - ./.env:/var/task/.env:ro
+    ports:
+      - "9001:8080"
+
+  device-subscribe:
+    image: digital-push-noti-lambdas
+    container_name: device-subscribe
+    # command: ["device-subscribe"]
+    environment:
+      - LAMBDA_BIN=device-subscribe
+    env_file:
+      - .env
+    # entrypoint: ["/bin/sh", "-c", "cp /var/task/$LAMBDA_BIN /var/task/bootstrap && exec /var/task/bootstrap"]
+    volumes:
+      - ./bin:/var/task
+      - ./.env:/var/task/.env:ro
+    ports:
+      - "9002:8080"
+
+  device-unsubscribe:
+    image: digital-push-noti-lambdas
+    container_name: device-unsubscribe
+    # command: ["device-unsubscribe"]
+    environment:
+      - LAMBDA_BIN=device-unsubscribe
+    env_file:
+      - .env
+    # entrypoint: ["/bin/sh", "-c", "cp /var/task/$LAMBDA_BIN /var/task/bootstrap && exec /var/task/bootstrap"]
+    volumes:
+      - ./bin:/var/task
+      - ./.env:/var/task/.env:ro
+    ports:
+      - "9003:8080"
+
+  # publish-notification:
+  #   image: digital-push-noti-lambdas
+  #   container_name: publish-notification
+  #   command: ["publish-notification"]
+  #   ports:
+  #     - "9004:8080"
+
   # postgres:
   #   image: postgres:16
   #   container_name: postgres_db
@@ -25,19 +78,19 @@ services:
   #     - redis_data:/data
 
   
-  dynamodb-local:
-    image: amazon/dynamodb-local:latest
-    container_name: dynamodb-local
-    ports:
-      - "8000:8000"
-    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
-    working_dir: /home/dynamodblocal
-    volumes:
-      - dynamodb_data:/home/dynamodblocal/data
-    restart: unless-stopped
+  # dynamodb-local:
+  #   image: amazon/dynamodb-local:latest
+  #   container_name: dynamodb-local
+  #   ports:
+  #     - "8000:8000"
+  #   command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
+  #   working_dir: /home/dynamodblocal
+  #   volumes:
+  #     - dynamodb_data:/home/dynamodblocal/data
+  #   restart: unless-stopped
 
 
-volumes:
-  dynamodb_data:
+# volumes:
+  # dynamodb_data:
   # postgres_data:
   # redis_data:

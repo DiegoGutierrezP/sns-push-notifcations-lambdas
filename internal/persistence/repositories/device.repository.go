@@ -7,6 +7,7 @@ import (
 	"lmbd-digital-push-notifications/internal/domain/entities"
 	"lmbd-digital-push-notifications/internal/persistence/mappers"
 	"lmbd-digital-push-notifications/internal/persistence/models"
+	"lmbd-digital-push-notifications/internal/shared/config"
 	"lmbd-digital-push-notifications/internal/shared/utils"
 	"strconv"
 
@@ -19,12 +20,14 @@ import (
 type DeviceRepository struct {
 	table  string
 	client *dynamodb.Client
+	config *config.Config
 }
 
-func NewDeviceRepository(client *dynamodb.Client) repositories.IDeviceRepository {
+func NewDeviceRepository(config *config.Config, client *dynamodb.Client) repositories.IDeviceRepository {
 	return &DeviceRepository{
 		table:  "pushnoti-devices",
 		client: client,
+		config: config,
 	}
 }
 
@@ -32,8 +35,9 @@ func (r *DeviceRepository) Save(ctx context.Context, d *entities.DeviceEntity) e
 
 	model := mappers.ToDeviceModel(d)
 
-	model.ID = models.DevicePk(model.ID)
+	// model.ID = models.DevicePk(model.ID)
 	model.GSI1PK = models.DeviceGSI1Pk(model.DeviceToken)
+	model.PlatformApplicationArn = r.config.Sns.PlatformAppArn
 
 	item, err := attributevalue.MarshalMap(model)
 	if err != nil {
@@ -133,7 +137,7 @@ func (r *DeviceRepository) ExistsByToken(ctx context.Context, token string) (boo
 
 	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
 		TableName:              &r.table,
-		IndexName:              aws.String("GSI1"),
+		IndexName:              aws.String("TokenIndex"),
 		KeyConditionExpression: aws.String("gsi1pk = :v"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":v": &types.AttributeValueMemberS{Value: gsi1pk},

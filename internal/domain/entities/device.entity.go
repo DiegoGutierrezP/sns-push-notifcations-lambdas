@@ -40,7 +40,8 @@ func NewDevice(
 		OperationSystem:    os,
 		SystemVersion:      systemVersion,
 		Status:             1,
-		CreatedAt:          now,
-		UpdatedAt:          now,
+		// PlatformApplicationArn: config.Config.Sns.AccessKeyId,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 }

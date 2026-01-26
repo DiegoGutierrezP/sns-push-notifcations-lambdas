@@ -2,11 +2,12 @@
 # ------------------------------------------------------------
 # Stage 1: Builder (compila todos los binarios de tus Lambdas)
 # ------------------------------------------------------------
-FROM golang:1.22 AS builder
+FROM golang:1.25 AS builder
 
 # Variables de build
 ARG TARGETOS=linux
-ARG TARGETARCH=arm64
+# ARG TARGETARCH=arm64
+ARG TARGETARCH=amd64
 ENV GOOS=$TARGETOS
 ENV GOARCH=$TARGETARCH
 ENV CGO_ENABLED=0
@@ -22,22 +23,38 @@ COPY . .
 
 # Compilar cada lambda (ajusta la lista si cambian)
 RUN mkdir -p /out/bin && \
-    go build -ldflags="-s -w" -o /out/bin/send-notification ./cmd/send-notification && \
-    go build -ldflags="-s -w" -o /out/bin/create-device     ./cmd/create-device && \
-    go build -ldflags="-s - w" -o /out/bin/subscription     ./cmd/subscription && \
-    go build -ldflags="-s -w" -o /out/bin/unsubscription    ./cmd/unsubscription && \
-    go build -ldflags="-s -w" -o /out/bin/update-device     ./cmd/update-device
+    go build -ldflags="-s -w" -o /out/bin/device-subscribe ./cmd/device-subscribe && \
+    go build -ldflags="-s -w" -o /out/bin/device-unsubscribe     ./cmd/device-unsubscribe && \
+    go build -ldflags="-s -w" -o /out/bin/publish-notification ./cmd/publish-notification && \
+    go build -ldflags="-s -w" -o /out/bin/register-device    ./cmd/register-device
+
+RUN chmod +x /out/bin/*
 
 # (Opcional) Generar ZIPs para despliegue tradicional
 RUN apt-get update && apt-get install -y zip && \
-    (cd /out/bin && for f in send-notification create-device subscription unsubscription update-device; do zip -q "$f.zip" "$f"; done)
+    (cd /out/bin && for f in device-subscribe device-unsubscribe publish-notification register-device; do zip -q "$f.zip" "$f"; done)
 
 # ------------------------------------------------------------
 # Stage 2: Export (artefactos listos en /out/bin)
 # ------------------------------------------------------------
-FROM alpine:3.20 AS export
-WORKDIR /out/bin
-COPY --from=builder /out/bin /out/bin
+# FROM alpine:3.20 AS export
+# WORKDIR /out/bin
+# COPY --from=builder /out/bin /out/bin
 
-# Los binarios y ZIPs quedan disponibles al hacer:
-# docker build -t push-lambdas . &&
+FROM public.ecr.aws/lambda/provided:al2
+
+WORKDIR /var/task
+COPY --from=builder /out/bin /var/task
+# COPY .env .env
+
+RUN printf '%s\n' \
+    '#!/bin/sh' \
+    'set -eu' \
+    ': "${LAMBDA_BIN:?Debes definir LAMBDA_BIN (ej: register-device)}"' \
+    'test -x "/var/task/${LAMBDA_BIN}" || { echo "No existe o no es ejecutable: /var/task/${LAMBDA_BIN}"; ls -la /var/task; exit 1; }' \
+    'exec "/var/task/${LAMBDA_BIN}"' \
+    > "${LAMBDA_RUNTIME_DIR}/bootstrap" && chmod +x "${LAMBDA_RUNTIME_DIR}/bootstrap"
+
+# wrapper: copia el binario que quieres como bootstrap
+# CMD ["bootstrap"]
+CMD ["handler"]

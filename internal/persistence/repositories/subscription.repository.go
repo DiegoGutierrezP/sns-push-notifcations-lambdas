@@ -30,8 +30,8 @@ func NewSubscriptionRepository(client *dynamodb.Client) repositories.ISubscripti
 func (r *SubscriptionRepository) Save(ctx context.Context, d *entities.SubscriptionEntity) error {
 	model := mappers.ToSubscribeModel(d)
 
-	model.DeviceID = models.SubscriptionPk(model.DeviceID)
-	model.TopicID = models.SubscriptionSk(model.TopicID)
+	// model.DeviceID = models.SubscriptionPk(model.DeviceID)
+	// model.TopicID = models.SubscriptionSk(model.TopicID)
 
 	item, err := attributevalue.MarshalMap(model)
 	if err != nil {

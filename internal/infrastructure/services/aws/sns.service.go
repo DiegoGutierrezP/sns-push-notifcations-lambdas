@@ -23,14 +23,14 @@ type SnsService struct {
 	platformAppArn string
 }
 
-func NewSnsService(ctx context.Context, cfg *appConfig.Config) (services.ISnsService, error) {
+func NewSnsService(cfg *appConfig.Config) (services.ISnsService, error) {
 	creds := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
 		cfg.Sns.AccessKeyId,
 		cfg.Sns.SecretAccessKey,
 		"",
 	))
 
-	awsCfg, err := config.LoadDefaultConfig(ctx,
+	awsCfg, err := config.LoadDefaultConfig(context.Background(),
 		config.WithRegion(cfg.Sns.Region),
 		config.WithCredentialsProvider(creds),
 	)
