@@ -14,7 +14,6 @@ func ToDeviceEntity(model *models.DeviceModel) *entities.DeviceEntity {
 	}
 
 	return &entities.DeviceEntity{
-		// ID:                 uuid.MustParse(model.ID),
 		ID:                 uuid.MustParse(strings.TrimPrefix(model.ID, models.DevicePkPrefix)),
 		DeviceToken:        model.DeviceToken,
 		DeviceName:         model.DeviceName,

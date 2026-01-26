@@ -1,6 +1,6 @@
 package dtos
 
 type DeviceUnsubscribeRequest struct {
-	DeviceToken     *string
-	SubscriptionArn string
+	DeviceId string `json:"deviceId" validate:"required,min=10"`
+	TopicArn string `json:"topicArn" validate:"required,min=10"`
 }

@@ -11,6 +11,5 @@ type RegisterDeviceRequest struct {
 
 type RegisterDeviceResponse struct {
 	DeviceId    string
-	DeviceToken string
 	EndpointArn string
 }

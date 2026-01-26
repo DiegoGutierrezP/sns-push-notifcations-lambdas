@@ -151,3 +151,33 @@ func (r *DeviceRepository) ExistsByToken(ctx context.Context, token string) (boo
 
 	return len(out.Items) > 0, nil
 }
+
+func (r *DeviceRepository) GetByToken(ctx context.Context, token string) (*entities.DeviceEntity, error) {
+
+	gsi1pk := models.DeviceGSI1Pk(token)
+
+	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              &r.table,
+		IndexName:              aws.String("TokenIndex"),
+		KeyConditionExpression: aws.String("gsi1pk = :v"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":v": &types.AttributeValueMemberS{Value: gsi1pk},
+		},
+		Limit: aws.Int32(1),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(out.Items) == 0 {
+		return nil, errors.New("device not found")
+	}
+
+	var device models.DeviceModel
+	if err := attributevalue.UnmarshalMap(out.Items[0], &device); err != nil {
+		return nil, err
+	}
+
+	return mappers.ToDeviceEntity(&device), nil
+}

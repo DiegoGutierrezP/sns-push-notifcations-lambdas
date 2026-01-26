@@ -12,4 +12,5 @@ type IDeviceRepository interface {
 	UpdateStatus(ctx context.Context, id string, status int) error
 	List(ctx context.Context) ([]*entities.DeviceEntity, error)
 	ExistsByToken(ctx context.Context, token string) (bool, error)
+	GetByToken(ctx context.Context, token string) (*entities.DeviceEntity, error)
 }

@@ -99,7 +99,6 @@ func (uc *RegisterDeviceUseCase) Execute(ctx context.Context, request dtos.Regis
 
 	return &dtos.RegisterDeviceResponse{
 		DeviceId:    deviceEntity.ID.String(),
-		DeviceToken: deviceEntity.DeviceToken,
 		EndpointArn: deviceEntity.EndpointArn,
 	}, nil
 }
