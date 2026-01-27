@@ -12,6 +12,7 @@ type (
 		Db       Db       `envPrefix:"DB_"`
 		Sns      Sns      `envPrefix:"SNS_"`
 		DynamoDb DynamoDb `envPrefix:"DYNAMODB_"`
+		Optimove Optimove `envPrefix:"OPTIMOVE_"`
 	}
 
 	Db struct {
@@ -34,6 +35,11 @@ type (
 		Region          string `env:"REGION"`
 		AccessKeyId     string `env:"ACCESS_KEY_ID"`
 		SecretAccessKey string `env:"SECRET_ACCESS_KEY"`
+	}
+
+	Optimove struct {
+		ApiUrl string `env:"API_URL"`
+		ApiKey string `env:"API_KEY"`
 	}
 )
 

@@ -12,7 +12,7 @@ import (
 	"go.uber.org/dig"
 )
 
-var handler *handlers.RegisterDeviceHandler
+var handler *handlers.UpdateDeviceHandler
 
 func init() {
 	c := dig.New()
@@ -23,7 +23,7 @@ func init() {
 	application.RegisterContainer(c)
 	presentation.RegisterContainer(c)
 
-	if err := c.Invoke(func(h *handlers.RegisterDeviceHandler) {
+	if err := c.Invoke(func(h *handlers.UpdateDeviceHandler) {
 		handler = h
 	}); err != nil {
 		panic(err)

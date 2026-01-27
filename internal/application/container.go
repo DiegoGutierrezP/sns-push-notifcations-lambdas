@@ -11,4 +11,5 @@ func RegisterContainer(c *dig.Container) {
 	_ = c.Provide(usecases.NewDeviceSubscribeUseCase)
 	_ = c.Provide(usecases.NewDeviceUnsubscribeUseCase)
 	_ = c.Provide(usecases.NewRegisterDeviceUseCase)
+	_ = c.Provide(usecases.NewUpdateDeviceUseCase)
 }

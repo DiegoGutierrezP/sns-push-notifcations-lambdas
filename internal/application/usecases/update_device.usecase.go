@@ -69,7 +69,7 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 		SystemVersion:      rq.SystemVersion,
 	}
 
-	//TODO : update device entity
+	// update device entity
 	if err := uc.deviceRepository.Update(ctx, device.ID.String(), &fieldsToUpdate); err != nil {
 		return nil, errors.New("Error al actualizar el device entity")
 	}
