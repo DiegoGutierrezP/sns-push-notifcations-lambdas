@@ -2,27 +2,32 @@ package usecases
 
 import (
 	"context"
+	"encoding/json"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
 	"lmbd-digital-push-notifications/internal/application/dtos"
+	"lmbd-digital-push-notifications/internal/domain/entities"
 	"log/slog"
 )
 
 type DeviceSubscribeUseCase struct {
-	snsService       services.ISnsService
-	deviceRepository repositories.IDeviceRepository
-	logger           *slog.Logger
+	snsService             services.ISnsService
+	deviceRepository       repositories.IDeviceRepository
+	subscriptionRepository repositories.ISubscriptionRepository
+	logger                 *slog.Logger
 }
 
 func NewDeviceSubscribeUseCase(
 	snsService services.ISnsService,
 	deviceRepository repositories.IDeviceRepository,
+	subscriptionRepository repositories.ISubscriptionRepository,
 	logger *slog.Logger,
 ) *DeviceSubscribeUseCase {
 	return &DeviceSubscribeUseCase{
-		snsService:       snsService,
-		deviceRepository: deviceRepository,
-		logger:           logger,
+		snsService:             snsService,
+		deviceRepository:       deviceRepository,
+		subscriptionRepository: subscriptionRepository,
+		logger:                 logger,
 	}
 }
 
@@ -45,25 +50,82 @@ func (uc *DeviceSubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceSub
 		return nil, err
 	}
 
-	protocol := "application"
+	subscription, err := uc.subscriptionRepository.Get(ctx, rq.DeviceId, rq.TopicArn)
+
 	subscriptionAttributes := services.SnsSubscriptionAttributes{
 		FilterPolicy: rq.Filters,
 	}
 
-	subscriptionArn, err := uc.snsService.Subscription(ctx, rq.TopicArn, device.EndpointArn, &protocol, &subscriptionAttributes)
-
+	attrBytes, err := json.Marshal(subscriptionAttributes)
 	if err != nil {
-		uc.logger.Error("snsService.Subscription failed",
+		uc.logger.Error("attributes conversion struct to string failed",
 			"requestId", requestID,
 			"err", err,
 		)
 		return nil, err
 	}
+	subscriptionAttributesString := string(attrBytes)
 
-	uc.logger.Info("Device subscribed successfully",
-		"requestId", requestID,
-		"subscriptionArn", subscriptionArn,
-	)
+	var subscriptionArn *string
+
+	if subscription != nil {
+		subscriptionArn = &subscription.SubscriptionArn
+
+		uc.logger.Info("Subscription already exists",
+			"requestId", requestID,
+			"subscriptionArn", subscriptionArn,
+			"deviceId", rq.DeviceId,
+			"topicArn", rq.TopicArn,
+		)
+
+		err := uc.snsService.UpdateSubscriptionAttributes(ctx, *subscriptionArn, &subscriptionAttributes)
+
+		if err != nil {
+			uc.logger.Error("snsService.UpdateSubscriptionAttributes failed",
+				"requestId", requestID,
+				"err", err,
+			)
+			return nil, err
+		}
+
+		if err := uc.subscriptionRepository.UpdateAttributes(ctx, rq.DeviceId, rq.TopicArn, subscriptionAttributesString); err != nil {
+			uc.logger.Error("subscriptionRepository.UpdateAttributes failed",
+				"requestId", requestID,
+				"err", err,
+			)
+			return nil, err
+		}
+
+		uc.logger.Info("Device subscription updated successfully",
+			"requestId", requestID,
+			"subscriptionArn", subscriptionArn,
+		)
+	} else {
+		subscriptionArn, err = uc.snsService.Subscription(ctx, rq.TopicArn, device.EndpointArn, "application", &subscriptionAttributes)
+
+		if err != nil {
+			uc.logger.Error("snsService.Subscription failed",
+				"requestId", requestID,
+				"err", err,
+			)
+			return nil, err
+		}
+
+		subscriptionEntity := entities.NewSubscription(rq.DeviceId, rq.TopicArn, *subscriptionArn, subscriptionAttributesString)
+
+		if err := uc.subscriptionRepository.Save(ctx, subscriptionEntity); err != nil {
+			uc.logger.Error("subscriptionRepository.Save failed",
+				"requestId", requestID,
+				"err", err,
+			)
+			return nil, err
+		}
+
+		uc.logger.Info("Device subscribed successfully",
+			"requestId", requestID,
+			"subscriptionArn", subscriptionArn,
+		)
+	}
 
 	return &dtos.DeviceSubscribeResponse{
 		SubscriptionArn: *subscriptionArn,

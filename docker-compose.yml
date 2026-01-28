@@ -3,7 +3,7 @@ version: "3.9"
 services:
 
   register-device:
-    image: digital-push-noti-lambdas
+    image: lmbd-digital-push-notifications
     container_name: register-device
     # command: ["register-device"]
     environment:
@@ -17,8 +17,23 @@ services:
     ports:
       - "9001:8080"
 
+  update-device:
+    image: lmbd-digital-push-notifications
+    container_name: update-device
+    # command: ["register-device"]
+    environment:
+      - LAMBDA_BIN=update-device
+    env_file:
+      - .env
+    # entrypoint: ["/bin/sh", "-c", "cp /var/task/$LAMBDA_BIN /var/task/bootstrap && exec /var/task/bootstrap"]
+    volumes:
+      - ./bin:/var/task
+      - ./.env:/var/task/.env:ro
+    ports:
+      - "9002:8080"
+
   device-subscribe:
-    image: digital-push-noti-lambdas
+    image: lmbd-digital-push-notifications
     container_name: device-subscribe
     # command: ["device-subscribe"]
     environment:
@@ -30,10 +45,10 @@ services:
       - ./bin:/var/task
       - ./.env:/var/task/.env:ro
     ports:
-      - "9002:8080"
+      - "9003:8080"
 
   device-unsubscribe:
-    image: digital-push-noti-lambdas
+    image: lmbd-digital-push-notifications
     container_name: device-unsubscribe
     # command: ["device-unsubscribe"]
     environment:
@@ -45,10 +60,10 @@ services:
       - ./bin:/var/task
       - ./.env:/var/task/.env:ro
     ports:
-      - "9003:8080"
+      - "9004:8080"
 
   # publish-notification:
-  #   image: digital-push-noti-lambdas
+  #   image: lmbd-digital-push-notifications
   #   container_name: publish-notification
   #   command: ["publish-notification"]
   #   ports:

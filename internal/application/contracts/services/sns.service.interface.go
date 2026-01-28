@@ -25,7 +25,7 @@ type SnsPublishOptions struct {
 }
 
 type ISnsService interface {
-	Subscription(ctx context.Context, topicArn string, endpoint string, protocol *string, attributes *SnsSubscriptionAttributes) (*string, error)
+	Subscription(ctx context.Context, topicArn string, endpoint string, protocol string, attributes *SnsSubscriptionAttributes) (*string, error)
 	Unsubscription(ctx context.Context, subscriptionArn string) error
 	UpdateSubscriptionAttributes(ctx context.Context, subscriptionArn string, attrs *SnsSubscriptionAttributes) error
 	UpdateSubscriptionFilterPolicy(ctx context.Context, subscriptionArn string, newFilterPolicy map[string][]string) error

@@ -1,6 +1,8 @@
 package config
 
 import (
+	"log"
+	"os"
 	"sync"
 
 	"github.com/caarlos0/env/v11"
@@ -49,15 +51,36 @@ var (
 )
 
 func GetConfig() *Config {
+	// once.Do(func() {
+	// 	if err := godotenv.Load(); err != nil {
+	// 		panic("Error cargando .env: " + err.Error())
+	// 	}
+
+	// 	if err := env.Parse(&configInstance); err != nil {
+	// 		panic(err)
+	// 	}
+	// })
+	// // fmt.Printf("%+v", configInstance)
+	// return &configInstance
+
 	once.Do(func() {
-		if err := godotenv.Load(); err != nil {
-			panic("Error cargando .env: " + err.Error())
+		// 1) Intenta cargar .env SOLO si existe (en Lambda normalmente NO existe)
+		if _, err := os.Stat(".env"); err == nil {
+			if err := godotenv.Load(); err != nil {
+				log.Printf("Advertencia: no se pudo cargar .env: %v", err)
+			}
+		} else {
+			log.Println("No se encontró .env. Continuando con variables de entorno.")
 		}
 
+		// 2) Parsear variables de entorno reales (de Lambda)
 		if err := env.Parse(&configInstance); err != nil {
-			panic(err)
+			log.Panicf("Error parseando variables de entorno: %v", err)
 		}
+
+		// 3) (Opcional) Exigir variables críticas
+		// validate(&configInstance)
 	})
-	// fmt.Printf("%+v", configInstance)
 	return &configInstance
+
 }

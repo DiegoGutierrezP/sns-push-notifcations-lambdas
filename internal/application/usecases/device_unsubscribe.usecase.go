@@ -61,6 +61,16 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 		return err
 	}
 
+	if err := uc.subscriptionRepository.Delete(ctx, rq.DeviceId, rq.TopicArn); err != nil {
+		uc.logger.Error("subscriptionRepository.Delete failed:",
+			"requestId", requestID,
+			"deviceId", rq.DeviceId,
+			"topicArn", rq.TopicArn,
+			"err", err,
+		)
+		return err
+	}
+
 	uc.logger.Info("Unsubscription successfully",
 		"requestId", requestID,
 		"subscriptionArn", subscription.SubscriptionArn,

@@ -124,3 +124,19 @@ func (r *SubscriptionRepository) UpdateStatus(ctx context.Context, deviceId, top
 
 	return err
 }
+
+func (r *SubscriptionRepository) UpdateAttributes(ctx context.Context, deviceId, topicId string, attributes string) error {
+	_, err := r.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+		TableName: &r.table,
+		Key: map[string]types.AttributeValue{
+			"pk": &types.AttributeValueMemberS{Value: models.SubscriptionPk(deviceId)},
+			"sk": &types.AttributeValueMemberS{Value: models.SubscriptionSk(topicId)},
+		},
+		UpdateExpression: aws.String("SET attributes = :v"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":v": &types.AttributeValueMemberS{Value: attributes},
+		},
+	})
+
+	return err
+}

@@ -26,7 +26,7 @@ RUN mkdir -p /out/bin && \
     go build -ldflags="-s -w" -o /out/bin/device-subscribe ./cmd/device-subscribe && \
     go build -ldflags="-s -w" -o /out/bin/device-unsubscribe     ./cmd/device-unsubscribe && \
     go build -ldflags="-s -w" -o /out/bin/publish-notification ./cmd/publish-notification && \
-    go build -ldflags="-s -w" -o /out/bin/register-device    ./cmd/register-device \
+    go build -ldflags="-s -w" -o /out/bin/register-device    ./cmd/register-device && \
     go build -ldflags="-s -w" -o /out/bin/update-device    ./cmd/update-device
 
 RUN chmod +x /out/bin/*
