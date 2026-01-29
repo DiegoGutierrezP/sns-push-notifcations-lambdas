@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/domain/entities"
 	"lmbd-digital-push-notifications/internal/persistence/mappers"
@@ -61,7 +60,7 @@ func (r *SubscriptionRepository) Get(ctx context.Context, deviceId, topicId stri
 	}
 
 	if out.Item == nil {
-		return nil, errors.New("subscription not found")
+		return nil, nil
 	}
 
 	var sub models.SubscriptionModel

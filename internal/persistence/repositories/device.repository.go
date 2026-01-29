@@ -37,8 +37,8 @@ func (r *DeviceRepository) Save(ctx context.Context, d *entities.DeviceEntity) e
 
 	model := mappers.ToDeviceModel(d)
 
-	// model.ID = models.DevicePk(model.ID)
 	model.GSI1PK = models.DeviceGSI1Pk(model.DeviceToken)
+	model.GSI2PK = models.DeviceGSI2Pk(model.CalimacoId)
 	model.PlatformApplicationArn = r.config.Sns.PlatformAppArn
 
 	item, err := attributevalue.MarshalMap(model)
@@ -49,7 +49,7 @@ func (r *DeviceRepository) Save(ctx context.Context, d *entities.DeviceEntity) e
 	_, err = r.client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName:           &r.table,
 		Item:                item,
-		ConditionExpression: aws.String("attribute_not_exists(pk) AND attribute_not_exists(gsi1pk)"),
+		ConditionExpression: aws.String("attribute_not_exists(pk)"),
 	})
 
 	return err
@@ -80,6 +80,36 @@ func (r *DeviceRepository) GetByID(ctx context.Context, id string) (*entities.De
 	}
 
 	return mappers.ToDeviceEntity(&device), nil
+}
+
+func (r *DeviceRepository) GetByCalimacoId(ctx context.Context, calimacoId string) ([]entities.DeviceEntity, error) {
+
+	gsi2pk := models.DeviceGSI2Pk(calimacoId)
+
+	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              &r.table,
+		IndexName:              aws.String("CalimacoIdIndex"),
+		KeyConditionExpression: aws.String("gsi2pk = :v"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":v": &types.AttributeValueMemberS{Value: gsi2pk},
+		},
+		//Limit: aws.Int32(1),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var devices []models.DeviceModel
+	if err := attributevalue.UnmarshalListOfMaps(out.Items, &devices); err != nil {
+		return nil, err
+	}
+
+	entities := utils.Map(devices, func(d models.DeviceModel) entities.DeviceEntity {
+		return *mappers.ToDeviceEntity(&d)
+	})
+
+	return entities, nil
 }
 
 func (r *DeviceRepository) Delete(ctx context.Context, id string) error {

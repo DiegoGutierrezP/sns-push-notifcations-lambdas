@@ -3,6 +3,7 @@ package usecases
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
 	"lmbd-digital-push-notifications/internal/application/dtos"
@@ -37,97 +38,176 @@ func (uc *DeviceSubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceSub
 	uc.logger.Info("DeviceSubscribeUseCase started:",
 		"requestId", requestID,
 		"topicArn", rq.TopicArn,
-		"deviceId", rq.DeviceId,
+		"calimacoId", rq.CalimacoId,
 	)
 
-	device, err := uc.deviceRepository.GetByID(ctx, rq.DeviceId)
+	devices, err := uc.deviceRepository.GetByCalimacoId(ctx, rq.CalimacoId)
 
 	if err != nil {
-		uc.logger.Error("deviceRepository.GetByID failed",
+		uc.logger.Error("deviceRepository.GetByCalimacoId failed",
 			"requestId", requestID,
+			"calimacoId", rq.CalimacoId,
 			"err", err,
 		)
 		return nil, err
 	}
 
-	subscription, err := uc.subscriptionRepository.Get(ctx, rq.DeviceId, rq.TopicArn)
+	uc.logger.Info("Total devices found ",
+		"requestId", requestID,
+		"calimacoId", rq.CalimacoId,
+		"totalDevices", len(devices),
+	)
+
+	if len(devices) == 0 {
+		uc.logger.Error("No devices found",
+			"requestId", requestID,
+			"calimacoId", rq.CalimacoId,
+		)
+		return nil, errors.New("No devices found for calimaco id")
+	}
 
 	subscriptionAttributes := services.SnsSubscriptionAttributes{
 		FilterPolicy: rq.Filters,
 	}
 
-	attrBytes, err := json.Marshal(subscriptionAttributes)
-	if err != nil {
-		uc.logger.Error("attributes conversion struct to string failed",
-			"requestId", requestID,
-			"err", err,
-		)
-		return nil, err
-	}
-	subscriptionAttributesString := string(attrBytes)
+	subscriptions := make([]dtos.DeviceSubscribedDto, 0, len(devices))
 
-	var subscriptionArn *string
+	for _, device := range devices {
+		deviceSubscribedResult := dtos.DeviceSubscribedDto{
+			DeviceId: device.ID.String(),
+			Success:  true,
+		}
 
-	if subscription != nil {
-		subscriptionArn = &subscription.SubscriptionArn
-
-		uc.logger.Info("Subscription already exists",
-			"requestId", requestID,
-			"subscriptionArn", subscriptionArn,
-			"deviceId", rq.DeviceId,
-			"topicArn", rq.TopicArn,
-		)
-
-		err := uc.snsService.UpdateSubscriptionAttributes(ctx, *subscriptionArn, &subscriptionAttributes)
+		subscription, err := uc.subscriptionRepository.Get(ctx, device.ID.String(), rq.TopicArn)
 
 		if err != nil {
-			uc.logger.Error("snsService.UpdateSubscriptionAttributes failed",
+			uc.logger.Info("subscriptionRepository.Get failed",
 				"requestId", requestID,
-				"err", err,
+				"deviceId", device.ID,
+				"topicArn", rq.TopicArn,
 			)
-			return nil, err
+
+			deviceSubscribedResult.Success = false
+			subscriptions = append(subscriptions, deviceSubscribedResult)
+			continue
 		}
 
-		if err := uc.subscriptionRepository.UpdateAttributes(ctx, rq.DeviceId, rq.TopicArn, subscriptionAttributesString); err != nil {
-			uc.logger.Error("subscriptionRepository.UpdateAttributes failed",
+		// update subscription
+		if subscription != nil {
+			deviceSubscribedResult.SubscriptionArn = subscription.SubscriptionArn
+
+			uc.logger.Info("Subscription already exists",
 				"requestId", requestID,
-				"err", err,
+				"subscriptionArn", subscription.SubscriptionArn,
+				"deviceId", device.ID,
+				"topicArn", rq.TopicArn,
 			)
-			return nil, err
+
+			err := uc.updateSubscription(ctx, device, rq.TopicArn, subscription.SubscriptionArn, subscriptionAttributes)
+
+			if err != nil {
+				deviceSubscribedResult.Success = false
+				subscriptions = append(subscriptions, deviceSubscribedResult)
+				continue
+			}
+
+			uc.logger.Info("Device subscription updated successfully",
+				"requestId", requestID,
+				"deviceId", device.ID,
+				"subscriptionArn", subscription.SubscriptionArn,
+			)
+
+			subscriptions = append(subscriptions, deviceSubscribedResult)
+
+			continue
 		}
 
-		uc.logger.Info("Device subscription updated successfully",
-			"requestId", requestID,
-			"subscriptionArn", subscriptionArn,
-		)
-	} else {
-		subscriptionArn, err = uc.snsService.Subscription(ctx, rq.TopicArn, device.EndpointArn, "application", &subscriptionAttributes)
+		//register subscription
+
+		subscriptionArn, err := uc.registerSubscription(ctx, device, rq.TopicArn, subscriptionAttributes)
+
+		deviceSubscribedResult.SubscriptionArn = *subscriptionArn
 
 		if err != nil {
-			uc.logger.Error("snsService.Subscription failed",
-				"requestId", requestID,
-				"err", err,
-			)
-			return nil, err
-		}
-
-		subscriptionEntity := entities.NewSubscription(rq.DeviceId, rq.TopicArn, *subscriptionArn, subscriptionAttributesString)
-
-		if err := uc.subscriptionRepository.Save(ctx, subscriptionEntity); err != nil {
-			uc.logger.Error("subscriptionRepository.Save failed",
-				"requestId", requestID,
-				"err", err,
-			)
-			return nil, err
+			deviceSubscribedResult.Success = false
+			subscriptions = append(subscriptions, deviceSubscribedResult)
+			continue
 		}
 
 		uc.logger.Info("Device subscribed successfully",
 			"requestId", requestID,
+			"deviceId", device.ID,
 			"subscriptionArn", subscriptionArn,
 		)
+
+		deviceSubscribedResult.Success = true
+		subscriptions = append(subscriptions, deviceSubscribedResult)
 	}
 
 	return &dtos.DeviceSubscribeResponse{
-		SubscriptionArn: *subscriptionArn,
+		CalimacoId:    rq.CalimacoId,
+		TopicArn:      rq.TopicArn,
+		Subscriptions: subscriptions,
 	}, nil
+}
+
+func (uc *DeviceSubscribeUseCase) registerSubscription(
+	ctx context.Context,
+	device entities.DeviceEntity,
+	topicArn string,
+	subscriptionAttrs services.SnsSubscriptionAttributes,
+) (*string, error) {
+	subscriptionArn, err := uc.snsService.Subscription(ctx, topicArn, device.EndpointArn, "application", &subscriptionAttrs)
+
+	if err != nil {
+		uc.logger.Error("snsService.Subscription failed",
+			"deviceId", device.ID,
+			"topicArn", topicArn,
+			"err", err,
+		)
+		return nil, err
+	}
+
+	attrBytes, _ := json.Marshal(subscriptionAttrs)
+
+	subscriptionEntity := entities.NewSubscription(device.ID.String(), topicArn, *subscriptionArn, string(attrBytes))
+
+	if err := uc.subscriptionRepository.Save(ctx, subscriptionEntity); err != nil {
+		uc.logger.Error("subscriptionRepository.Save failed",
+			"deviceId", device.ID,
+			"topicArn", topicArn,
+			"err", err,
+		)
+		return nil, err
+	}
+
+	return subscriptionArn, nil
+}
+
+func (uc *DeviceSubscribeUseCase) updateSubscription(
+	ctx context.Context,
+	device entities.DeviceEntity,
+	topicArn string,
+	subscriptionArn string,
+	subscriptionAttrs services.SnsSubscriptionAttributes,
+) error {
+	err := uc.snsService.UpdateSubscriptionAttributes(ctx, subscriptionArn, &subscriptionAttrs)
+
+	if err != nil {
+		uc.logger.Error("snsService.UpdateSubscriptionAttributes failed",
+			"err", err,
+		)
+		return err
+	}
+
+	attrBytes, _ := json.Marshal(subscriptionAttrs)
+
+	if err := uc.subscriptionRepository.UpdateAttributes(ctx, device.ID.String(), topicArn, string(attrBytes)); err != nil {
+		uc.logger.Error("subscriptionRepository.UpdateAttributes failed",
+			"err", err,
+		)
+		return err
+	}
+
+	return nil
 }

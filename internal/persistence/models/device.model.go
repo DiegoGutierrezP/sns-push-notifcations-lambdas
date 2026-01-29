@@ -7,6 +7,7 @@ import (
 const (
 	DevicePkPrefix     string = "DEVICE#"
 	DeviceGSI1PkPrefix string = "TOKEN#"
+	DeviceGSI2PkPrefix string = "CALIMACOID#"
 )
 
 type DeviceModel struct {
@@ -24,7 +25,8 @@ type DeviceModel struct {
 	CreatedAt              time.Time `dynamodbav:"createdAt"`
 	UpdatedAt              time.Time `dynamodbav:"updatedAt"`
 
-	GSI1PK string `dynamodbav:"gsi1pk"` // device token
+	GSI1PK string `dynamodbav:"gsi1pk"` // deviceToken
+	GSI2PK string `dynamodbav:"gsi2pk"` // calimacId
 }
 
 func (DeviceModel) TableName() string {
@@ -37,4 +39,8 @@ func DevicePk(deviceId string) string {
 
 func DeviceGSI1Pk(token string) string {
 	return DeviceGSI1PkPrefix + token
+}
+
+func DeviceGSI2Pk(calimacoId string) string {
+	return DeviceGSI2PkPrefix + calimacoId
 }

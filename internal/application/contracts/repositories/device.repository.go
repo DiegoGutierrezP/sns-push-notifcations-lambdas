@@ -27,4 +27,5 @@ type IDeviceRepository interface {
 	ExistsByToken(ctx context.Context, token string) (bool, error)
 	ExistsByTokenExcept(ctx context.Context, token string, exceptDeviceID string) (bool, error)
 	Update(ctx context.Context, id string, update *UpdateDeviceFields) error
+	GetByCalimacoId(ctx context.Context, calimacoId string) ([]entities.DeviceEntity, error)
 }
