@@ -242,37 +242,3 @@ func (s *OptimoveGateway) UpdateCustomerAttributes(ctx context.Context, data ser
 
 	return nil
 }
-
-// func (s *OptimoveGateway) GetProcessedCampaignCustomers(ctx context.Context, campaignId int) (*services.OptimoveCampaignDetails, error) {
-// 	endpoint, err := url.JoinPath(s.baseUrl, "/Actions/GetProcessedCampaignCustomers")
-// 	if err != nil {
-// 		return nil, fmt.Errorf("invalid base url: %w", err)
-// 	}
-
-// 	q := url.Values{}
-// 	q.Set("campaignId", fmt.Sprint(campaignId))
-
-// 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+"?"+q.Encode(), nil)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("creating request: %w", err)
-// 	}
-
-// 	req.Header.Set("x-api-key", s.apiKey)
-// 	// req.Header.Set("Accept", "application/json")
-
-// 	resp, err := s.client.Do(req)
-
-// 	if err != nil {
-// 		return nil, fmt.Errorf("error en request: %w", err)
-// 	}
-// 	defer resp.Body.Close()
-
-// 	var result services.OptimoveCampaignDetails
-
-// 	decoder := json.NewDecoder(resp.Body)
-// 	if err := decoder.Decode(&result); err != nil {
-// 		return nil, fmt.Errorf("decode response: %w", err)
-// 	}
-
-// 	return &result, nil
-// }

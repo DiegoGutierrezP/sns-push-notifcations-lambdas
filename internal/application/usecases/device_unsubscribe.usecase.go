@@ -30,7 +30,7 @@ func NewDeviceUnsubscribeUseCase(
 	}
 }
 
-func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceUnsubscribeRequest) error {
+func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceUnsubscribeRequest) (*dtos.DeviceUnsubscribeResponse, error) {
 	requestID, _ := ctx.Value("requestID").(string)
 
 	uc.logger.Info("DeviceUnsubscribeUseCase started:",
@@ -47,7 +47,7 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 			"calimacoId", rq.CalimacoId,
 			"err", err,
 		)
-		return err
+		return nil, err
 	}
 
 	if len(devices) == 0 {
@@ -55,8 +55,10 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 			"requestId", requestID,
 			"calimacoId", rq.CalimacoId,
 		)
-		return errors.New("No devices found for calimaco id")
+		return nil, errors.New("No devices found for calimaco id")
 	}
+
+	var devicesUnsubscribed []string
 
 	for _, device := range devices {
 		subscription, err := uc.subscriptionRepository.Get(ctx, device.ID.String(), rq.TopicArn)
@@ -68,7 +70,7 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 				"topicArn", rq.TopicArn,
 				"err", err,
 			)
-			return err
+			continue
 		}
 
 		if subscription == nil {
@@ -92,7 +94,7 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 				"subscriptionArn", subscription.SubscriptionArn,
 				"err", err,
 			)
-			return err
+			continue
 		}
 
 		_ = uc.subscriptionRepository.Delete(ctx, device.ID.String(), rq.TopicArn)
@@ -102,7 +104,11 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 			"deviceId", device.ID,
 			"subscriptionArn", subscription.SubscriptionArn,
 		)
+
+		devicesUnsubscribed = append(devicesUnsubscribed, device.ID.String())
 	}
 
-	return nil
+	return &dtos.DeviceUnsubscribeResponse{
+		Devices: devicesUnsubscribed,
+	}, nil
 }

@@ -49,5 +49,5 @@ func (h *DeviceSubscribeHandler) Handler(
 		return httpres.Fail(http.StatusInternalServerError, "error interno", err.Error()), nil
 	}
 
-	return httpres.Success(http.StatusOK, "", data), nil
+	return httpres.Success(http.StatusOK, "Dispositivos suscritos correctamente", data), nil
 }

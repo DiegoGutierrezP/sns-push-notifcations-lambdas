@@ -41,10 +41,12 @@ func (h *DeviceUnsubscribeHandler) Handler(
 		), nil
 	}
 
-	if err := h.usecase.Execute(ctx, payload); err != nil {
+	resp, err := h.usecase.Execute(ctx, payload)
+
+	if err != nil {
 		log.Printf("error procesando request: %v", err)
 		return httpres.Fail(http.StatusInternalServerError, "error interno", err.Error()), nil
 	}
 
-	return httpres.Success[any](http.StatusOK, "", nil), nil
+	return httpres.Success(http.StatusOK, "Dispositivos desuscritos correctamente", resp), nil
 }

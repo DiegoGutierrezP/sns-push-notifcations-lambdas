@@ -5,3 +5,7 @@ type DeviceUnsubscribeRequest struct {
 	CalimacoId string `json:"calimacoId" validate:"required"`
 	TopicArn   string `json:"topicArn" validate:"required,min=10"`
 }
+
+type DeviceUnsubscribeResponse struct {
+	Devices []string `json:"devices"`
+}
