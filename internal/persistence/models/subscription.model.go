@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -24,9 +25,9 @@ func (SubscriptionModel) TableName() string {
 }
 
 func SubscriptionPk(id string) string {
-	return SubscriptionPkPrefix + id
+	return fmt.Sprintf("%s%s", SubscriptionPkPrefix, id)
 }
 
 func SubscriptionSk(id string) string {
-	return SubscriptionSkPrefix + id
+	return fmt.Sprintf("%s%s", SubscriptionSkPrefix, id)
 }

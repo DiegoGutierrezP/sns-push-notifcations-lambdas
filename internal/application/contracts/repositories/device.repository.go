@@ -10,7 +10,7 @@ type UpdateDeviceFields struct {
 	DeviceName         *string
 	DeviceToken        *string
 	ApplicationVersion *string
-	CalimacoId         *int64
+	CalimacoId         *int
 	UserId             *string
 	OperatingSystem    *string
 	SystemVersion      *string
@@ -26,6 +26,6 @@ type IDeviceRepository interface {
 	List(ctx context.Context) ([]*entities.DeviceEntity, error)
 	ExistsByToken(ctx context.Context, token string) (bool, error)
 	ExistsByTokenExcept(ctx context.Context, token string, exceptDeviceID string) (bool, error)
-	Update(ctx context.Context, id string, update *UpdateDeviceFields) error
-	GetByCalimacoId(ctx context.Context, calimacoId string) ([]entities.DeviceEntity, error)
+	Update(ctx context.Context, id string, data *entities.DeviceEntity) error
+	GetByCalimacoId(ctx context.Context, calimacoId int) ([]entities.DeviceEntity, error)
 }

@@ -13,8 +13,8 @@ type DeviceEntity struct {
 	EndpointArn            string
 	DeviceName             string
 	ApplicationVersion     string
-	CalimacoId             string
-	UserId                 string
+	CalimacoId             *int
+	UserId                 *int
 	OperationSystem        string
 	SystemVersion          string
 	Status                 int
@@ -23,8 +23,8 @@ type DeviceEntity struct {
 }
 
 func NewDevice(
-	deviceToken, endpointArn, deviceName, appVersion,
-	calimacoId, userId, os, systemVersion string,
+	deviceToken, endpointArn, deviceName, appVersion string,
+	calimacoId, userId *int, os, systemVersion string,
 ) *DeviceEntity {
 
 	now := time.Now().UTC()
@@ -43,8 +43,4 @@ func NewDevice(
 		CreatedAt:          now,
 		UpdatedAt:          now,
 	}
-}
-
-func (e *DeviceEntity) ReadyToUpdate() {
-
 }

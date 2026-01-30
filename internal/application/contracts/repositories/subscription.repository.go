@@ -12,4 +12,5 @@ type ISubscriptionRepository interface {
 	ListByDevice(ctx context.Context, deviceId string) ([]*entities.SubscriptionEntity, error)
 	UpdateStatus(ctx context.Context, deviceId, topicId string, isActive bool) error
 	UpdateAttributes(ctx context.Context, deviceId, topicId string, attributes string) error
+	DeleteByDevice(ctx context.Context, deviceId string) error
 }

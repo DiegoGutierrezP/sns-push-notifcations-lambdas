@@ -139,3 +139,61 @@ func (r *SubscriptionRepository) UpdateAttributes(ctx context.Context, deviceId,
 
 	return err
 }
+
+func (r *SubscriptionRepository) DeleteByDevice(ctx context.Context, deviceId string) error {
+	pk := models.SubscriptionPk(deviceId)
+
+	// 1️⃣ Traer todos los SK del device
+	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              &r.table,
+		KeyConditionExpression: aws.String("pk = :pk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": &types.AttributeValueMemberS{Value: pk},
+		},
+		ProjectionExpression: aws.String("pk, sk"), // solo lo necesario
+	})
+	if err != nil {
+		return err
+	}
+
+	// 2️⃣ No hay nada que borrar
+	if len(out.Items) == 0 {
+		return nil
+	}
+
+	// 3️⃣ Batch delete (máx 25 por request)
+	const batchSize = 25
+	for i := 0; i < len(out.Items); i += batchSize {
+		end := i + batchSize
+		if end > len(out.Items) {
+			end = len(out.Items)
+		}
+
+		writeRequests := make([]types.WriteRequest, 0, batchSize)
+
+		for _, item := range out.Items[i:end] {
+			pkAttr := item["pk"]
+			skAttr := item["sk"]
+
+			writeRequests = append(writeRequests, types.WriteRequest{
+				DeleteRequest: &types.DeleteRequest{
+					Key: map[string]types.AttributeValue{
+						"pk": pkAttr,
+						"sk": skAttr,
+					},
+				},
+			})
+		}
+
+		_, err := r.client.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
+			RequestItems: map[string][]types.WriteRequest{
+				r.table: writeRequests,
+			},
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

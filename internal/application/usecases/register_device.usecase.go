@@ -8,7 +8,6 @@ import (
 	"lmbd-digital-push-notifications/internal/application/dtos"
 	"lmbd-digital-push-notifications/internal/domain/entities"
 	"log/slog"
-	"strconv"
 )
 
 type RegisterDeviceUseCase struct {
@@ -78,8 +77,8 @@ func (uc *RegisterDeviceUseCase) Execute(ctx context.Context, request dtos.Regis
 		endpointArn,
 		request.DeviceName,
 		request.ApplicationVersion,
-		strconv.Itoa(int(request.CalimacoId)),
-		"",
+		request.CalimacoId,
+		nil,
 		request.OperatingSystem,
 		request.SystemVersion,
 	)

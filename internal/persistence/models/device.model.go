@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -17,8 +18,8 @@ type DeviceModel struct {
 	EndpointArn            string    `dynamodbav:"endpointArn"`
 	DeviceName             string    `dynamodbav:"deviceName"`
 	ApplicationVersion     string    `dynamodbav:"applicationVersion"`
-	CalimacoId             string    `dynamodbav:"calimacoId"`
-	UserId                 string    `dynamodbav:"userId"`
+	CalimacoId             *string   `dynamodbav:"calimacoId"`
+	UserId                 *string   `dynamodbav:"userId"`
 	OperationSystem        string    `dynamodbav:"operatingSystem"`
 	SystemVersion          string    `dynamodbav:"systemVersion"`
 	Status                 int       `dynamodbav:"status"`
@@ -34,13 +35,13 @@ func (DeviceModel) TableName() string {
 }
 
 func DevicePk(deviceId string) string {
-	return DevicePkPrefix + deviceId
+	return fmt.Sprintf("%s%s", DevicePkPrefix, deviceId)
 }
 
 func DeviceGSI1Pk(token string) string {
-	return DeviceGSI1PkPrefix + token
+	return fmt.Sprintf("%s%s", DeviceGSI1PkPrefix, token)
 }
 
 func DeviceGSI2Pk(calimacoId string) string {
-	return DeviceGSI2PkPrefix + calimacoId
+	return fmt.Sprintf("%s%s", DeviceGSI2PkPrefix, calimacoId)
 }

@@ -2,12 +2,12 @@ package dtos
 
 type DeviceSubscribeRequest struct {
 	TopicArn   string              `json:"topicArn" validate:"required,min=10"`
-	CalimacoId string              `json:"calimacoId" validate:"required"`
+	CalimacoId int                 `json:"calimacoId" validate:"required"`
 	Filters    map[string][]string `json:"filters" validate:"omitempty,subscription_filters"`
 }
 
 type DeviceSubscribeResponse struct {
-	CalimacoId    string                `json:"calimacoId"`
+	CalimacoId    int                   `json:"calimacoId"`
 	TopicArn      string                `json:"topicArn"`
 	Subscriptions []DeviceSubscribedDto `json:"subscriptions"`
 }

@@ -95,7 +95,7 @@ func (s *SnsService) Subscription(
 }
 
 func (s *SnsService) Unsubscription(ctx context.Context, subscriptionArn string) error {
-	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	cctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	_, err := s.client.Unsubscribe(cctx, &sns.UnsubscribeInput{
@@ -129,7 +129,7 @@ func (s *SnsService) UpdateSubscriptionFilterPolicy(
 	filterPolicyStr := string(jsonData)
 
 	// 3. Setear atributo en SNS
-	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	cctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	_, err = s.client.SetSubscriptionAttributes(cctx, &sns.SetSubscriptionAttributesInput{
@@ -312,7 +312,7 @@ func (s *SnsService) PublishToTarget(ctx context.Context, targetArn string, mess
 
 func (s *SnsService) CreateEndpoint(ctx context.Context, deviceToken string) (string, error) {
 
-	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	cctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	output, err := s.client.CreatePlatformEndpoint(cctx, &sns.CreatePlatformEndpointInput{
@@ -332,7 +332,7 @@ func (s *SnsService) CreateEndpoint(ctx context.Context, deviceToken string) (st
 
 func (s *SnsService) UpdateEndpoint(ctx context.Context, endpointArn string, newToken string) error {
 
-	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	cctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	_, err := s.client.SetEndpointAttributes(cctx, &sns.SetEndpointAttributesInput{

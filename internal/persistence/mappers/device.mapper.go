@@ -3,6 +3,7 @@ package mappers
 import (
 	"lmbd-digital-push-notifications/internal/domain/entities"
 	"lmbd-digital-push-notifications/internal/persistence/models"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -13,6 +14,9 @@ func ToDeviceEntity(model *models.DeviceModel) *entities.DeviceEntity {
 		return nil
 	}
 
+	calimacoId, _ := strconv.Atoi(*model.CalimacoId)
+	userId, _ := strconv.Atoi(*model.UserId)
+
 	return &entities.DeviceEntity{
 		ID:                 uuid.MustParse(strings.TrimPrefix(model.ID, models.DevicePkPrefix)),
 		DeviceToken:        model.DeviceToken,
@@ -22,8 +26,8 @@ func ToDeviceEntity(model *models.DeviceModel) *entities.DeviceEntity {
 		OperationSystem:    model.OperationSystem,
 		SystemVersion:      model.SystemVersion,
 		Status:             model.Status,
-		CalimacoId:         model.CalimacoId,
-		UserId:             model.UserId,
+		CalimacoId:         &calimacoId,
+		UserId:             &userId,
 		CreatedAt:          model.CreatedAt,
 		UpdatedAt:          model.UpdatedAt,
 	}
@@ -34,6 +38,9 @@ func ToDeviceModel(entity *entities.DeviceEntity) *models.DeviceModel {
 		return nil
 	}
 
+	calimacoIdStr := strconv.Itoa(*entity.CalimacoId)
+	userIdStr := strconv.Itoa(*entity.UserId)
+
 	return &models.DeviceModel{
 		ID:                 models.DevicePk(entity.ID.String()),
 		DeviceToken:        entity.DeviceToken,
@@ -43,9 +50,12 @@ func ToDeviceModel(entity *entities.DeviceEntity) *models.DeviceModel {
 		OperationSystem:    entity.OperationSystem,
 		SystemVersion:      entity.SystemVersion,
 		Status:             entity.Status,
-		CalimacoId:         entity.CalimacoId,
-		UserId:             entity.UserId,
+		CalimacoId:         &calimacoIdStr,
+		UserId:             &userIdStr,
 		CreatedAt:          entity.CreatedAt,
 		UpdatedAt:          entity.UpdatedAt,
+
+		GSI1PK: models.DeviceGSI1Pk(entity.DeviceToken),
+		GSI2PK: models.DeviceGSI2Pk(calimacoIdStr),
 	}
 }

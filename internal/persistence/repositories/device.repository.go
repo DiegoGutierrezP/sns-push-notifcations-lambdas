@@ -2,7 +2,7 @@ package repositories
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/domain/entities"
 	"lmbd-digital-push-notifications/internal/persistence/mappers"
@@ -11,7 +11,6 @@ import (
 	"lmbd-digital-push-notifications/internal/shared/utils"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -38,7 +37,10 @@ func (r *DeviceRepository) Save(ctx context.Context, d *entities.DeviceEntity) e
 	model := mappers.ToDeviceModel(d)
 
 	model.GSI1PK = models.DeviceGSI1Pk(model.DeviceToken)
-	model.GSI2PK = models.DeviceGSI2Pk(model.CalimacoId)
+	if model.CalimacoId != nil {
+		model.GSI2PK = models.DeviceGSI2Pk(*model.CalimacoId)
+	}
+
 	model.PlatformApplicationArn = r.config.Sns.PlatformAppArn
 
 	item, err := attributevalue.MarshalMap(model)
@@ -71,7 +73,7 @@ func (r *DeviceRepository) GetByID(ctx context.Context, id string) (*entities.De
 	}
 
 	if out.Item == nil {
-		return nil, errors.New("device not found")
+		return nil, nil
 	}
 
 	var device models.DeviceModel
@@ -82,9 +84,9 @@ func (r *DeviceRepository) GetByID(ctx context.Context, id string) (*entities.De
 	return mappers.ToDeviceEntity(&device), nil
 }
 
-func (r *DeviceRepository) GetByCalimacoId(ctx context.Context, calimacoId string) ([]entities.DeviceEntity, error) {
+func (r *DeviceRepository) GetByCalimacoId(ctx context.Context, calimacoId int) ([]entities.DeviceEntity, error) {
 
-	gsi2pk := models.DeviceGSI2Pk(calimacoId)
+	gsi2pk := models.DeviceGSI2Pk(strconv.Itoa(calimacoId))
 
 	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
 		TableName:              &r.table,
@@ -96,14 +98,20 @@ func (r *DeviceRepository) GetByCalimacoId(ctx context.Context, calimacoId strin
 		//Limit: aws.Int32(1),
 	})
 
+	fmt.Println("aca llegue 1 ")
+
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("aca llegue 2")
 
 	var devices []models.DeviceModel
 	if err := attributevalue.UnmarshalListOfMaps(out.Items, &devices); err != nil {
 		return nil, err
 	}
+
+	fmt.Println("aca llegue 3")
 
 	entities := utils.Map(devices, func(d models.DeviceModel) entities.DeviceEntity {
 		return *mappers.ToDeviceEntity(&d)
@@ -216,71 +224,18 @@ func (r *DeviceRepository) ExistsByTokenExcept(
 	return len(out.Items) > 0, nil
 }
 
-func (r *DeviceRepository) UpdateFields(
-	ctx context.Context,
-	id string,
-	fields map[string]any,
-) error {
-
-	if len(fields) == 0 {
-		return nil
-	}
-
-	pk := models.DevicePk(id)
-
-	updateExpr := "SET "
-	exprValues := map[string]types.AttributeValue{}
-	exprNames := map[string]string{}
-
-	i := 0
-	for k, v := range fields {
-		nameKey := "#f" + strconv.Itoa(i)
-		valueKey := ":v" + strconv.Itoa(i)
-
-		updateExpr += nameKey + " = " + valueKey + ","
-
-		exprNames[nameKey] = k
-		av, err := attributevalue.Marshal(v)
-		if err != nil {
-			return err
-		}
-		exprValues[valueKey] = av
-		i++
-	}
-
-	updateExpr = strings.TrimSuffix(updateExpr, ",")
-
-	_, err := r.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
-		TableName: &r.table,
-		Key: map[string]types.AttributeValue{
-			"pk": &types.AttributeValueMemberS{Value: pk},
-		},
-		UpdateExpression:          aws.String(updateExpr),
-		ExpressionAttributeNames:  exprNames,
-		ExpressionAttributeValues: exprValues,
-		ConditionExpression:       aws.String("attribute_exists(pk)"),
-	})
-
-	return err
-}
-
 func (r *DeviceRepository) Update(
 	ctx context.Context,
 	id string,
-	update *repositories.UpdateDeviceFields,
+	data *entities.DeviceEntity,
 ) error {
 
-	fields := utils.StructToMap(update)
+	model := mappers.ToDeviceModel(data)
 
-	if len(fields) == 0 {
-		return nil
-	}
-
-	fields["updatedAt"] = time.Now().UTC()
+	fields := utils.StructToMap(model, "dynamodbav")
 
 	delete(fields, "pk")
-	delete(fields, "deviceToken")
-	delete(fields, "gsi1pk")
+	delete(fields, "createdAt")
 
 	pk := models.DevicePk(id)
 
