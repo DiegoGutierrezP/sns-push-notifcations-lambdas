@@ -56,7 +56,7 @@ type OptimoveCustomerAttributeResponse struct {
 
 type OptimoveCustomerAttributeValue struct {
 	RealFieldName string
-	Value         any
+	Value         string
 }
 
 type OptimoveCustomerNewAttributesValues struct {
@@ -71,4 +71,7 @@ type OptimoveUpdateCustomerAttributesDto struct {
 
 type IOptimoveGateway interface {
 	GetExecutedCampaignChannelDetails(ctx context.Context, campaignId int, channelId int) ([]ExecutedCampaignDetailsResponse, error)
+	GetCampaignDetails(ctx context.Context, campaignId int) (*OptimoveCampaignDetails, error)
+	GetCustomerAttributes(ctx context.Context, customerId string) ([]OptimoveCustomerAttributeResponse, error)
+	UpdateCustomerAttributes(ctx context.Context, data OptimoveUpdateCustomerAttributesDto) error
 }

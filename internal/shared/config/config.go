@@ -11,19 +11,10 @@ import (
 
 type (
 	Config struct {
-		Db       Db       `envPrefix:"DB_"`
-		Sns      Sns      `envPrefix:"SNS_"`
-		DynamoDb DynamoDb `envPrefix:"DYNAMODB_"`
-		Optimove Optimove `envPrefix:"OPTIMOVE_"`
-	}
-
-	Db struct {
-		Host     string `env:"HOST"`
-		Port     string `env:"PORT"`
-		User     string `env:"USER"`
-		Password string `env:"PASSWORD"`
-		DBName   string `env:"DBNAME"`
-		SSL      bool   `env:"SSL"`
+		Sns               Sns      `envPrefix:"SNS_"`
+		DynamoDb          DynamoDb `envPrefix:"DYNAMODB_"`
+		Optimove          Optimove `envPrefix:"OPTIMOVE_"`
+		ApiRateLimitTable string   `env:"API_RATE_LIMIT_TABLE"`
 	}
 
 	Sns struct {
@@ -40,8 +31,9 @@ type (
 	}
 
 	Optimove struct {
-		ApiUrl string `env:"API_URL"`
-		ApiKey string `env:"API_KEY"`
+		ApiUrl          string `env:"API_URL"`
+		ApiKey          string `env:"API_KEY"`
+		CallbackBaseUrl string `env:"CALLBACK_BASE_URL"`
 	}
 )
 

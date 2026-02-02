@@ -3,32 +3,41 @@ package usecases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
 	"lmbd-digital-push-notifications/internal/application/dtos"
 	"lmbd-digital-push-notifications/internal/domain/entities"
+	"lmbd-digital-push-notifications/internal/shared/config"
 	"log/slog"
+	"strconv"
 	"time"
 )
 
 type UpdateDeviceUseCase struct {
-	snsService             services.ISnsService
-	deviceRepository       repositories.IDeviceRepository
-	subscriptionRepository repositories.ISubscriptionRepository
-	logger                 *slog.Logger
+	snsService              services.ISnsService
+	deviceRepository        repositories.IDeviceRepository
+	subscriptionRepository  repositories.ISubscriptionRepository
+	optimoveGateway         services.IOptimoveGateway
+	optimoveCallbackBaseUrl string
+	logger                  *slog.Logger
 }
 
 func NewUpdateDeviceUseCase(
+	config *config.Config,
 	snsService services.ISnsService,
 	deviceRepository repositories.IDeviceRepository,
 	subscriptionRepository repositories.ISubscriptionRepository,
+	optimoveGateway services.IOptimoveGateway,
 	logger *slog.Logger,
 ) *UpdateDeviceUseCase {
 	return &UpdateDeviceUseCase{
-		snsService:             snsService,
-		deviceRepository:       deviceRepository,
-		subscriptionRepository: subscriptionRepository,
-		logger:                 logger,
+		snsService:              snsService,
+		deviceRepository:        deviceRepository,
+		subscriptionRepository:  subscriptionRepository,
+		optimoveGateway:         optimoveGateway,
+		optimoveCallbackBaseUrl: config.Optimove.CallbackBaseUrl,
+		logger:                  logger,
 	}
 }
 
@@ -126,6 +135,10 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 		_ = uc.deleteSubscriptions(ctx, device)
 	}
 
+	if rq.CalimacoId != nil {
+		go uc.optimoveSyncCustomerAttributes(ctx, strconv.Itoa(*device.CalimacoId), device)
+	}
+
 	return &dtos.UpdateDeviceResponse{
 		DeviceId: device.ID.String(),
 	}, nil
@@ -190,4 +203,106 @@ func (uc *UpdateDeviceUseCase) mapDeviceRequestFields(device *entities.DeviceEnt
 	}
 
 	device.UpdatedAt = time.Now().UTC()
+}
+
+type attrMapping struct {
+	get func(*entities.DeviceEntity) string
+}
+
+var optimoveMap = map[string]attrMapping{
+	"DEVICE_NAME": {
+		get: func(d *entities.DeviceEntity) string { return d.DeviceName },
+	},
+	"APPLICATION_VERSION": {
+		get: func(d *entities.DeviceEntity) string { return d.ApplicationVersion },
+	},
+	"SYSTEM_VERSION": {
+		get: func(d *entities.DeviceEntity) string { return d.SystemVersion },
+	},
+	"OPERATING_SYSTEM": {
+		get: func(d *entities.DeviceEntity) string { return d.OperationSystem },
+	},
+	"INSTALLATION_DATE": {
+		get: func(d *entities.DeviceEntity) string {
+			return d.CreatedAt.Format("2006-01-02")
+		},
+	},
+	"INSTALLATION_HOUR": {
+		get: func(d *entities.DeviceEntity) string {
+			return d.CreatedAt.Format("15:04:05")
+		},
+	},
+}
+
+func (uc *UpdateDeviceUseCase) optimoveSyncCustomerAttributes(ctx context.Context, customerId string, device *entities.DeviceEntity) error {
+	uc.logger.Info("optimoveSyncCustomerAttributes started",
+		"customerId", customerId,
+		"deviceId", device.ID,
+	)
+
+	attrs, err := uc.optimoveGateway.GetCustomerAttributes(ctx, customerId)
+	if err != nil {
+
+		uc.logger.Error("optimoveGateway.GetCustomerAttributes failed",
+			"customerId", customerId,
+			"deviceId", device.ID,
+			"err", err,
+		)
+
+		return err
+	}
+
+	var updates []services.OptimoveCustomerAttributeValue
+
+	for _, attr := range attrs {
+		mapping, ok := optimoveMap[attr.RealFieldName]
+		if !ok {
+			continue
+		}
+
+		current := fmt.Sprint(attr.Value)
+		expected := mapping.get(device)
+
+		if current != expected {
+			uc.logger.Info("Optimove attribute out of sync",
+				"field", attr.RealFieldName,
+				"optimove", current,
+				"local", expected,
+			)
+
+			updates = append(updates, services.OptimoveCustomerAttributeValue{
+				RealFieldName: attr.RealFieldName,
+				Value:         expected,
+			})
+		}
+	}
+
+	uc.logger.Info("Total attributes to update",
+		"total", len(updates),
+	)
+
+	if len(updates) == 0 {
+		return nil
+	}
+
+	attrValuesUpdate := services.OptimoveCustomerNewAttributesValues{
+		CustomerID: customerId,
+		Attributes: updates,
+	}
+
+	dataUpdate := services.OptimoveUpdateCustomerAttributesDto{
+		CustomerNewAttributesValuesList: []services.OptimoveCustomerNewAttributesValues{attrValuesUpdate},
+		CallbackURL:                     &uc.optimoveCallbackBaseUrl,
+	}
+
+	if err := uc.optimoveGateway.UpdateCustomerAttributes(ctx, dataUpdate); err != nil {
+		uc.logger.Error("optimoveGateway.UpdateCustomerAttributes failed",
+			"customerId", customerId,
+			"deviceId", device.ID,
+			"err", err,
+		)
+		return err
+	}
+
+	return nil
 }
