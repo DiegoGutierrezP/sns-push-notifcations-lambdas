@@ -38,8 +38,17 @@ func ToDeviceModel(entity *entities.DeviceEntity) *models.DeviceModel {
 		return nil
 	}
 
-	calimacoIdStr := strconv.Itoa(*entity.CalimacoId)
-	userIdStr := strconv.Itoa(*entity.UserId)
+	var calimacoIdStr *string
+	if entity.CalimacoId != nil {
+		v := strconv.Itoa(*entity.CalimacoId)
+		calimacoIdStr = &v
+	}
+
+	var userIdStr *string
+	if entity.UserId != nil {
+		v := strconv.Itoa(*entity.UserId)
+		userIdStr = &v
+	}
 
 	return &models.DeviceModel{
 		ID:                 models.DevicePk(entity.ID.String()),
@@ -50,12 +59,17 @@ func ToDeviceModel(entity *entities.DeviceEntity) *models.DeviceModel {
 		OperationSystem:    entity.OperationSystem,
 		SystemVersion:      entity.SystemVersion,
 		Status:             entity.Status,
-		CalimacoId:         &calimacoIdStr,
-		UserId:             &userIdStr,
+		CalimacoId:         calimacoIdStr,
+		UserId:             userIdStr,
 		CreatedAt:          entity.CreatedAt,
 		UpdatedAt:          entity.UpdatedAt,
 
 		GSI1PK: models.DeviceGSI1Pk(entity.DeviceToken),
-		GSI2PK: models.DeviceGSI2Pk(calimacoIdStr),
+		GSI2PK: models.DeviceGSI2Pk(func() string {
+			if calimacoIdStr != nil {
+				return *calimacoIdStr
+			}
+			return ""
+		}()),
 	}
 }
