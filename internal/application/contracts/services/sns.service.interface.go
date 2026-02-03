@@ -17,7 +17,7 @@ type SnsSubscriptionAttributes struct {
 type SnsMessageAttributes map[string]snsTypes.MessageAttributeValue
 
 type SnsPublishOptions struct {
-	Subject        string
+	Subject        *string
 	Attributes     SnsMessageAttributes
 	MessageGroupId string // para FIFO
 	MessageDedupId string // para FIFO

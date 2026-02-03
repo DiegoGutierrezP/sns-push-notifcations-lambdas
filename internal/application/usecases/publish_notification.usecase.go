@@ -2,8 +2,6 @@ package usecases
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
 	"lmbd-digital-push-notifications/internal/application/dtos"
@@ -31,38 +29,82 @@ func (uc *PublishNotificationUseCase) Execute(ctx context.Context, rq dtos.Publi
 		"TargetArn", rq.TargetArn,
 	)
 
-	if rq.TargetArn == "" && rq.TopicArn == "" {
-		return errors.New("targetArn or topicArn is required")
+	if rq.TargetArn == nil && rq.TopicArn == nil {
+		uc.logger.Error("targetArn and topicArn are empty")
+
+		return fmt.Errorf("targetArn or topicArn is required")
 	}
 
-	dataBytes, _ := json.Marshal(rq.Data)
-
-	payload := map[string]string{
-		"default": rq.Body,
-		"GCM": fmt.Sprintf(`{
-		"notification": {
-			"title": "%s",
-			"body": "%s"
-		},
-		"data": %s
-	}`, rq.Title, rq.Body, string(dataBytes)),
-	}
-
-	attrs := services.SnsMessageAttributes{}
-
-	for k, v := range rq.Attributes {
-		attrs[k] = types.MessageAttributeValue{
-			DataType:    aws.String("String"),
-			StringValue: aws.String(v),
-		}
-	}
+	pushMessage := uc.buildPushMessage(rq.Title, rq.Body, rq.Data)
 
 	publishOptions := services.SnsPublishOptions{
-		Attributes: attrs,
-		Subject:    rq.Title,
+		Subject: rq.Title,
 	}
 
-	uc.snsService.Publish(ctx, &rq.TopicArn, &rq.TargetArn, payload, &publishOptions)
+	if rq.Attributes != nil {
+		attrs := services.SnsMessageAttributes{}
+
+		for k, v := range rq.Attributes {
+			attrs[k] = types.MessageAttributeValue{
+				DataType:    aws.String("String"),
+				StringValue: aws.String(v),
+			}
+		}
+
+		publishOptions.Attributes = attrs
+	}
+
+	if err := uc.snsService.Publish(ctx, rq.TopicArn, rq.TargetArn, pushMessage, &publishOptions); err != nil {
+		uc.logger.Error("snsService.Publish failed",
+			"TopicArn", rq.TopicArn,
+			"TargetArn", rq.TargetArn,
+			"err", err,
+		)
+		return fmt.Errorf("An error occurred while publishing notification: %w", err)
+	}
+
+	uc.logger.Info("Notification published successfully",
+		"TopicArn", rq.TopicArn,
+		"TargetArn", rq.TargetArn,
+	)
 
 	return nil
+}
+
+func (uc *PublishNotificationUseCase) buildPushMessage(
+	title *string,
+	body string,
+	data map[string]string,
+) dtos.PushMessage {
+
+	// Android (Firebase / GCM)
+	gcm := map[string]any{
+		"notification": map[string]any{
+			"title": title,
+			"body":  body,
+		},
+		"data": data,
+	}
+
+	// iOS (APNS)
+	apns := map[string]any{
+		"aps": map[string]any{
+			"alert": map[string]any{
+				"title": title,
+				"body":  body,
+			},
+			"sound": "default",
+		},
+	}
+
+	// Adjuntar data custom fuera de "aps"
+	for k, v := range data {
+		apns[k] = v
+	}
+
+	return dtos.PushMessage{
+		Default: body,
+		GCM:     gcm,
+		APNS:    apns,
+	}
 }

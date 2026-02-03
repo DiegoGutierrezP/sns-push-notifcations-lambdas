@@ -62,12 +62,20 @@ services:
     ports:
       - "9004:8080"
 
-  # publish-notification:
-  #   image: lmbd-digital-push-notifications
-  #   container_name: publish-notification
-  #   command: ["publish-notification"]
-  #   ports:
-  #     - "9004:8080"
+  publish-notification:
+    image: lmbd-digital-push-notifications
+    container_name: publish-notification
+    # command: ["publish-notification"]
+    environment:
+      - LAMBDA_BIN=publish-notification
+    env_file:
+      - .env
+    # entrypoint: ["/bin/sh", "-c", "cp /var/task/$LAMBDA_BIN /var/task/bootstrap && exec /var/task/bootstrap"]
+    volumes:
+      - ./bin:/var/task
+      - ./.env:/var/task/.env:ro
+    ports:
+      - "9005:8080"
 
   # postgres:
   #   image: postgres:16

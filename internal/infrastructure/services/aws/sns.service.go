@@ -279,8 +279,8 @@ func (s *SnsService) Publish(
 
 	// 3. Opciones
 	if opts != nil {
-		if opts.Subject != "" {
-			input.Subject = aws.String(opts.Subject)
+		if opts.Subject != nil {
+			input.Subject = aws.String(*opts.Subject)
 		}
 
 		if opts.Attributes != nil {

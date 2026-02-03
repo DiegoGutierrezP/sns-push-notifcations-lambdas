@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"lmbd-digital-push-notifications/internal/application/dtos"
 	"lmbd-digital-push-notifications/internal/application/usecases"
+	validation "lmbd-digital-push-notifications/internal/application/validations"
 	"log"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -28,9 +29,17 @@ func (h *PublishNotificationHandler) Handler(
 ) {
 	for _, rec := range evt.Records {
 
+		log.Println("Processing message:", rec.Body)
+
 		var payload dtos.PublishNotificationRequest
+
 		if err := json.Unmarshal([]byte(rec.Body), &payload); err != nil {
-			log.Printf("falló messageId=%s: %v", rec.MessageId, err) // TODO: improve message
+			log.Printf("Request inválido, messageId=%s: %v", rec.MessageId, err)
+			continue
+		}
+
+		if err := validation.Validate.Struct(payload); err != nil {
+			log.Printf("Request inválido validacion fallida, messageId=%s: %v", rec.MessageId, err)
 			continue
 		}
 

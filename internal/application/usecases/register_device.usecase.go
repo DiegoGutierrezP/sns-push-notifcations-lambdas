@@ -2,7 +2,7 @@ package usecases
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
 	"lmbd-digital-push-notifications/internal/application/dtos"
@@ -47,12 +47,12 @@ func (uc *RegisterDeviceUseCase) Execute(ctx context.Context, request dtos.Regis
 			"requestId", requestID,
 			"err", err,
 		)
-		return nil, errors.New("An Error ocurred ")
+		return nil, fmt.Errorf("An Error occurred while checking if device token exists: %w", err)
 	}
 
 	if exists {
 		uc.logger.Error("Device token already registered", "requestId", requestID)
-		return nil, errors.New("token already registered")
+		return nil, fmt.Errorf("token already registered")
 	}
 
 	// create endpoint arn for new devices
@@ -63,7 +63,7 @@ func (uc *RegisterDeviceUseCase) Execute(ctx context.Context, request dtos.Regis
 			"requestId", requestID,
 			"err", err,
 		)
-		return nil, errors.New("Ocurrio un error al crear el endpoint ARN")
+		return nil, fmt.Errorf("An error occurred while creating endpoint ARN: %w", err)
 	}
 
 	uc.logger.Info("Endpoint created",
@@ -88,7 +88,7 @@ func (uc *RegisterDeviceUseCase) Execute(ctx context.Context, request dtos.Regis
 			"requestId", requestID,
 			"err", err,
 		)
-		return nil, errors.New("Ocurrio un error al registrar el dispositivo")
+		return nil, fmt.Errorf("An error occurred while registering device: %w", err)
 	}
 
 	uc.logger.Info("Device registered successfully",

@@ -3,7 +3,7 @@ package usecases
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
 	"lmbd-digital-push-notifications/internal/application/dtos"
@@ -49,7 +49,7 @@ func (uc *DeviceSubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceSub
 			"calimacoId", rq.CalimacoId,
 			"err", err,
 		)
-		return nil, err
+		return nil, fmt.Errorf("An error occurred, searching devices for calimaco id %d", rq.CalimacoId)
 	}
 
 	uc.logger.Info("Total devices found ",
@@ -63,7 +63,7 @@ func (uc *DeviceSubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceSub
 			"requestId", requestID,
 			"calimacoId", rq.CalimacoId,
 		)
-		return nil, errors.New("No devices found for calimaco id")
+		return nil, fmt.Errorf("No devices found for calimaco id %d", rq.CalimacoId)
 	}
 
 	subscriptionAttributes := services.SnsSubscriptionAttributes{

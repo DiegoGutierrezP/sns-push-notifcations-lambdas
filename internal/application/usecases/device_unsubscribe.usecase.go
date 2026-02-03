@@ -2,7 +2,7 @@ package usecases
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
 	"lmbd-digital-push-notifications/internal/application/dtos"
@@ -47,7 +47,7 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 			"calimacoId", rq.CalimacoId,
 			"err", err,
 		)
-		return nil, err
+		return nil, fmt.Errorf("An error occurred, searching devices for calimaco id %d", rq.CalimacoId)
 	}
 
 	if len(devices) == 0 {
@@ -55,7 +55,7 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 			"requestId", requestID,
 			"calimacoId", rq.CalimacoId,
 		)
-		return nil, errors.New("No devices found for calimaco id")
+		return nil, fmt.Errorf("No devices found for calimaco id %d", rq.CalimacoId)
 	}
 
 	var devicesUnsubscribed []string

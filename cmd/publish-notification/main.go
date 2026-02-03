@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"lmbd-digital-push-notifications/internal/application"
 	"lmbd-digital-push-notifications/internal/infrastructure"
 	"lmbd-digital-push-notifications/internal/persistence"
@@ -8,7 +9,7 @@ import (
 	"lmbd-digital-push-notifications/internal/presentation/handlers"
 	"lmbd-digital-push-notifications/internal/shared/config"
 
-	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-lambda-go/events"
 	"go.uber.org/dig"
 )
 
@@ -30,17 +31,17 @@ func init() {
 	}
 }
 
-func main() {
-	lambda.Start(handler.Handler)
-}
-
 // func main() {
-// 	evt := events.SQSEvent{
-// 		Records: []events.SQSMessage{
-// 			{MessageId: "1", Body: `{"message":"Hola","token":"tok-123"}`},
-// 			{MessageId: "2", Body: `{"message":"Hola 2","token":"tok-456"}`},
-// 		},
-// 	}
-
-// 	handler(context.Background(), evt) // reutiliza tu handler real
+// 	lambda.Start(handler.Handler)
 // }
+
+func main() {
+	evt := events.SQSEvent{
+		Records: []events.SQSMessage{
+			{MessageId: "1", Body: `{"targetArn":"arn:aws:sns:us-east-1:418274024107:endpoint/GCM/IncidenciasTest/e7873244-d148-3f70-b4e5-1cb2fc037e61", "body": "Este es el mensaje 1"}`},
+			// {MessageId: "2", Body: `{"topicArn":"arn:aws:sns:us-east-1:418274024107:football-events", "body": "Este es el mensaje 1"}`},
+		},
+	}
+
+	handler.Handler(context.Background(), evt) // reutiliza tu handler real
+}

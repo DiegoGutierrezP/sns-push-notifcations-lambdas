@@ -2,7 +2,6 @@ package usecases
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
@@ -60,7 +59,7 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 			"requestId", requestID,
 			"err", err,
 		)
-		return nil, errors.New("An error occurred while searching for the device.")
+		return nil, fmt.Errorf("An error occurred while searching for the device.")
 	}
 
 	if device == nil {
@@ -68,7 +67,7 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 			"requestId", requestID,
 			"deviceId", rq.DeviceId,
 		)
-		return nil, errors.New("Device not found")
+		return nil, fmt.Errorf("Device not found")
 	}
 
 	if rq.DeviceToken != nil {
@@ -86,7 +85,7 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 				"deviceToken", rq.DeviceToken,
 			)
 
-			return nil, errors.New("An Error ocurred ")
+			return nil, fmt.Errorf("An Error ocurred while checking if device token exists: %w", err)
 		}
 		if exists {
 			uc.logger.Warn("token already registered on another device",
@@ -95,7 +94,7 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 				"deviceToken", rq.DeviceToken,
 			)
 
-			return nil, errors.New("token already registered on another device")
+			return nil, fmt.Errorf("token already registered on another device")
 		}
 	}
 
@@ -110,7 +109,7 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 			"requestId", requestID,
 			"deviceId", rq.DeviceId,
 		)
-		return nil, errors.New("Error al actualizar el device entity")
+		return nil, fmt.Errorf("An error occurred while updating device entity: %w", err)
 	}
 
 	// update device token in endpoint
@@ -124,7 +123,7 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 				"endpointArn", device.EndpointArn,
 				"deviceToken", rq.DeviceToken,
 			)
-			return nil, errors.New("Error al actualizar el device endpoint")
+			return nil, fmt.Errorf("An error occurred while updating device endpoint: %w", err)
 		}
 	}
 

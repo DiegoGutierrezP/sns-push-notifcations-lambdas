@@ -1,10 +1,16 @@
 package dtos
 
 type PublishNotificationRequest struct {
-	TargetArn  string            `json:"targetArn,omitempty"` // endpoint
-	TopicArn   string            `json:"topicArn,omitempty"`  // topic
-	Title      string            `json:"title"`
-	Body       string            `json:"body"`
+	TargetArn  *string           `json:"targetArn,omitempty"` // endpoint
+	TopicArn   *string           `json:"topicArn,omitempty"`  // topic
+	Title      *string           `json:"title"`
+	Body       string            `json:"body" validate:"required"`
 	Data       map[string]string `json:"data,omitempty"`
 	Attributes map[string]string `json:"attributes,omitempty"` // filtros SNS
+}
+
+type PushMessage struct {
+	Default string `json:"default"`
+	GCM     any    `json:"GCM"`
+	APNS    any    `json:"APNS"`
 }
