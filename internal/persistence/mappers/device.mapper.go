@@ -14,8 +14,19 @@ func ToDeviceEntity(model *models.DeviceModel) *entities.DeviceEntity {
 		return nil
 	}
 
-	calimacoId, _ := strconv.Atoi(*model.CalimacoId)
-	userId, _ := strconv.Atoi(*model.UserId)
+	var calimacoId *int
+	if model.CalimacoId != nil {
+		if v, err := strconv.Atoi(*model.CalimacoId); err == nil {
+			calimacoId = &v
+		}
+	}
+
+	var userId *int
+	if model.UserId != nil {
+		if v, err := strconv.Atoi(*model.UserId); err == nil {
+			userId = &v
+		}
+	}
 
 	return &entities.DeviceEntity{
 		ID:                 uuid.MustParse(strings.TrimPrefix(model.ID, models.DevicePkPrefix)),
@@ -26,8 +37,8 @@ func ToDeviceEntity(model *models.DeviceModel) *entities.DeviceEntity {
 		OperationSystem:    model.OperationSystem,
 		SystemVersion:      model.SystemVersion,
 		Status:             model.Status,
-		CalimacoId:         &calimacoId,
-		UserId:             &userId,
+		CalimacoId:         calimacoId,
+		UserId:             userId,
 		CreatedAt:          model.CreatedAt,
 		UpdatedAt:          model.UpdatedAt,
 	}
