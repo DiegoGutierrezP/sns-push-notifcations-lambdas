@@ -4,7 +4,6 @@ import (
 	"lmbd-digital-push-notifications/internal/domain/entities"
 	"lmbd-digital-push-notifications/internal/persistence/models"
 	"strconv"
-	"strings"
 
 	"github.com/google/uuid"
 )
@@ -29,7 +28,7 @@ func ToDeviceEntity(model *models.DeviceModel) *entities.DeviceEntity {
 	}
 
 	return &entities.DeviceEntity{
-		ID:                 uuid.MustParse(strings.TrimPrefix(model.ID, models.DevicePkPrefix)),
+		ID:                 uuid.MustParse(model.ID),
 		DeviceToken:        model.DeviceToken,
 		DeviceName:         model.DeviceName,
 		EndpointArn:        model.EndpointArn,
@@ -62,7 +61,7 @@ func ToDeviceModel(entity *entities.DeviceEntity) *models.DeviceModel {
 	}
 
 	return &models.DeviceModel{
-		ID:                 models.DevicePk(entity.ID.String()),
+		ID:                 entity.ID.String(),
 		DeviceToken:        entity.DeviceToken,
 		DeviceName:         entity.DeviceName,
 		EndpointArn:        entity.EndpointArn,
@@ -74,13 +73,5 @@ func ToDeviceModel(entity *entities.DeviceEntity) *models.DeviceModel {
 		UserId:             userIdStr,
 		CreatedAt:          entity.CreatedAt,
 		UpdatedAt:          entity.UpdatedAt,
-
-		GSI1PK: models.DeviceGSI1Pk(entity.DeviceToken),
-		GSI2PK: models.DeviceGSI2Pk(func() string {
-			if calimacoIdStr != nil {
-				return *calimacoIdStr
-			}
-			return ""
-		}()),
 	}
 }

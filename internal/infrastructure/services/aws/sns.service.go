@@ -243,15 +243,15 @@ func (s *SnsService) Publish(
 	targetArn *string,
 	message any,
 	opts *services.SnsPublishOptions,
-) error {
+) (*string, error) {
 
 	// Validación obligatoria
 	if topicArn == nil && targetArn == nil {
-		return fmt.Errorf("debes enviar topicArn o targetArn")
+		return nil, fmt.Errorf("debes enviar topicArn o targetArn")
 	}
 
 	if topicArn != nil && targetArn != nil {
-		return fmt.Errorf("solo uno de topicArn o targetArn puede estar presente")
+		return nil, fmt.Errorf("solo uno de topicArn o targetArn puede estar presente")
 	}
 
 	input := &sns.PublishInput{}
@@ -271,7 +271,7 @@ func (s *SnsService) Publish(
 	default:
 		jsonBody, err := json.Marshal(m)
 		if err != nil {
-			return fmt.Errorf("error serializando json: %w", err)
+			return nil, fmt.Errorf("error serializando json: %w", err)
 		}
 		input.Message = aws.String(string(jsonBody))
 		input.MessageStructure = aws.String("json")
@@ -297,16 +297,18 @@ func (s *SnsService) Publish(
 	}
 
 	// 4. Enviar
-	_, err := s.client.Publish(ctx, input)
+	res, err := s.client.Publish(ctx, input)
 
-	return err
+	fmt.Println(res.MessageId)
+
+	return res.MessageId, err
 }
 
-func (s *SnsService) PublishToTopic(ctx context.Context, topicArn string, message any, opts *services.SnsPublishOptions) error {
+func (s *SnsService) PublishToTopic(ctx context.Context, topicArn string, message any, opts *services.SnsPublishOptions) (*string, error) {
 	return s.Publish(ctx, &topicArn, nil, message, opts)
 }
 
-func (s *SnsService) PublishToTarget(ctx context.Context, targetArn string, message any, opts *services.SnsPublishOptions) error {
+func (s *SnsService) PublishToTarget(ctx context.Context, targetArn string, message any, opts *services.SnsPublishOptions) (*string, error) {
 	return s.Publish(ctx, nil, &targetArn, message, opts)
 }
 

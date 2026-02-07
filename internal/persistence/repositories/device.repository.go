@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/domain/entities"
 	"lmbd-digital-push-notifications/internal/persistence/mappers"
@@ -26,7 +25,7 @@ type DeviceRepository struct {
 
 func NewDeviceRepository(config *config.Config, client *dynamodb.Client) repositories.IDeviceRepository {
 	return &DeviceRepository{
-		table:  "pushnoti-devices",
+		table:  config.DynamoDb.DevicesTable,
 		client: client,
 		config: config,
 	}
@@ -35,11 +34,6 @@ func NewDeviceRepository(config *config.Config, client *dynamodb.Client) reposit
 func (r *DeviceRepository) Save(ctx context.Context, d *entities.DeviceEntity) error {
 
 	model := mappers.ToDeviceModel(d)
-
-	model.GSI1PK = models.DeviceGSI1Pk(model.DeviceToken)
-	if model.CalimacoId != nil {
-		model.GSI2PK = models.DeviceGSI2Pk(*model.CalimacoId)
-	}
 
 	model.PlatformApplicationArn = r.config.Sns.PlatformAppArn
 
@@ -59,12 +53,10 @@ func (r *DeviceRepository) Save(ctx context.Context, d *entities.DeviceEntity) e
 
 func (r *DeviceRepository) GetByID(ctx context.Context, id string) (*entities.DeviceEntity, error) {
 
-	pk := models.DevicePk(id)
-
 	out, err := r.client.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: &r.table,
 		Key: map[string]types.AttributeValue{
-			"pk": &types.AttributeValueMemberS{Value: pk},
+			"pk": &types.AttributeValueMemberS{Value: id},
 		},
 	})
 
@@ -86,32 +78,24 @@ func (r *DeviceRepository) GetByID(ctx context.Context, id string) (*entities.De
 
 func (r *DeviceRepository) GetByCalimacoId(ctx context.Context, calimacoId int) ([]entities.DeviceEntity, error) {
 
-	gsi2pk := models.DeviceGSI2Pk(strconv.Itoa(calimacoId))
-
 	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
 		TableName:              &r.table,
-		IndexName:              aws.String("CalimacoIdIndex"),
-		KeyConditionExpression: aws.String("gsi2pk = :v"),
+		IndexName:              aws.String(models.DeviceCalimacoIdIndex),
+		KeyConditionExpression: aws.String("calimacoId = :v"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":v": &types.AttributeValueMemberS{Value: gsi2pk},
+			":v": &types.AttributeValueMemberS{Value: strconv.Itoa(calimacoId)},
 		},
 		//Limit: aws.Int32(1),
 	})
-
-	fmt.Println("aca llegue 1 ")
 
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("aca llegue 2")
-
 	var devices []models.DeviceModel
 	if err := attributevalue.UnmarshalListOfMaps(out.Items, &devices); err != nil {
 		return nil, err
 	}
-
-	fmt.Println("aca llegue 3")
 
 	entities := utils.Map(devices, func(d models.DeviceModel) entities.DeviceEntity {
 		return *mappers.ToDeviceEntity(&d)
@@ -122,12 +106,10 @@ func (r *DeviceRepository) GetByCalimacoId(ctx context.Context, calimacoId int) 
 
 func (r *DeviceRepository) Delete(ctx context.Context, id string) error {
 
-	pk := models.DevicePk(id)
-
 	_, err := r.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: &r.table,
 		Key: map[string]types.AttributeValue{
-			"pk": &types.AttributeValueMemberS{Value: pk},
+			"pk": &types.AttributeValueMemberS{Value: id},
 		},
 	})
 
@@ -138,7 +120,7 @@ func (r *DeviceRepository) UpdateStatus(ctx context.Context, id string, status i
 	_, err := r.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
 		TableName: &r.table,
 		Key: map[string]types.AttributeValue{
-			"pk": &types.AttributeValueMemberS{Value: models.DevicePk(id)},
+			"pk": &types.AttributeValueMemberS{Value: id},
 		},
 		UpdateExpression:         aws.String("SET #s = :status"),
 		ExpressionAttributeNames: map[string]string{"#s": "status"},
@@ -173,14 +155,12 @@ func (r *DeviceRepository) List(ctx context.Context) ([]*entities.DeviceEntity, 
 
 func (r *DeviceRepository) ExistsByToken(ctx context.Context, token string) (bool, error) {
 
-	gsi1pk := models.DeviceGSI1Pk(token)
-
 	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
 		TableName:              &r.table,
-		IndexName:              aws.String("TokenIndex"),
-		KeyConditionExpression: aws.String("gsi1pk = :v"),
+		IndexName:              aws.String(models.DeviceDeviceTokenIndex),
+		KeyConditionExpression: aws.String("deviceToken = :v"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":v": &types.AttributeValueMemberS{Value: gsi1pk},
+			":v": &types.AttributeValueMemberS{Value: token},
 		},
 		Limit: aws.Int32(1),
 	})
@@ -198,20 +178,17 @@ func (r *DeviceRepository) ExistsByTokenExcept(
 	exceptDeviceID string,
 ) (bool, error) {
 
-	gsi1pk := models.DeviceGSI1Pk(token)
-	exceptPK := models.DevicePk(exceptDeviceID)
-
 	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
 		TableName: &r.table,
-		IndexName: aws.String("TokenIndex"),
+		IndexName: aws.String(models.DeviceDeviceTokenIndex),
 
-		KeyConditionExpression: aws.String("gsi1pk = :v"),
+		KeyConditionExpression: aws.String("deviceToken = :v"),
 
 		FilterExpression: aws.String("pk <> :except"),
 
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":v":      &types.AttributeValueMemberS{Value: gsi1pk},
-			":except": &types.AttributeValueMemberS{Value: exceptPK},
+			":v":      &types.AttributeValueMemberS{Value: token},
+			":except": &types.AttributeValueMemberS{Value: exceptDeviceID},
 		},
 
 		Limit: aws.Int32(1),
@@ -236,8 +213,6 @@ func (r *DeviceRepository) Update(
 
 	delete(fields, "pk")
 	delete(fields, "createdAt")
-
-	pk := models.DevicePk(id)
 
 	updateExpr := "SET "
 	exprValues := map[string]types.AttributeValue{}
@@ -264,7 +239,7 @@ func (r *DeviceRepository) Update(
 	_, err := r.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
 		TableName: &r.table,
 		Key: map[string]types.AttributeValue{
-			"pk": &types.AttributeValueMemberS{Value: pk},
+			"pk": &types.AttributeValueMemberS{Value: id},
 		},
 		UpdateExpression:          aws.String(updateExpr),
 		ExpressionAttributeNames:  exprNames,

@@ -6,6 +6,7 @@ import (
 	"lmbd-digital-push-notifications/internal/domain/entities"
 	"lmbd-digital-push-notifications/internal/persistence/mappers"
 	"lmbd-digital-push-notifications/internal/persistence/models"
+	"lmbd-digital-push-notifications/internal/shared/config"
 	"lmbd-digital-push-notifications/internal/shared/utils"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -19,18 +20,15 @@ type SubscriptionRepository struct {
 	client *dynamodb.Client
 }
 
-func NewSubscriptionRepository(client *dynamodb.Client) repositories.ISubscriptionRepository {
+func NewSubscriptionRepository(config *config.Config, client *dynamodb.Client) repositories.ISubscriptionRepository {
 	return &SubscriptionRepository{
-		table:  "pushnoti-subscriptions",
+		table:  config.DynamoDb.SubscriptionTable,
 		client: client,
 	}
 }
 
 func (r *SubscriptionRepository) Save(ctx context.Context, d *entities.SubscriptionEntity) error {
 	model := mappers.ToSubscribeModel(d)
-
-	// model.DeviceID = models.SubscriptionPk(model.DeviceID)
-	// model.TopicID = models.SubscriptionSk(model.TopicID)
 
 	item, err := attributevalue.MarshalMap(model)
 	if err != nil {
@@ -196,4 +194,24 @@ func (r *SubscriptionRepository) DeleteByDevice(ctx context.Context, deviceId st
 	}
 
 	return nil
+}
+
+func (r *SubscriptionRepository) CountByTopic(ctx context.Context, topicID string) (int32, error) {
+
+	out, err := r.client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              aws.String(r.table),
+		IndexName:              aws.String(models.SubscriptionTopicIndex),
+		KeyConditionExpression: aws.String("#topic = :topicId"),
+		ExpressionAttributeNames: map[string]string{
+			"#topic": "sk", // TopicID vive en "sk"
+		},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":topicId": &types.AttributeValueMemberS{Value: models.SubscriptionSk(topicID)},
+		},
+		Select: types.SelectCount, // solo Count, no Items
+	})
+	if err != nil {
+		return 0, err
+	}
+	return out.Count, nil
 }

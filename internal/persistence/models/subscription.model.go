@@ -8,6 +8,8 @@ import (
 const (
 	SubscriptionPkPrefix string = "DEVICE#"
 	SubscriptionSkPrefix string = "TOPIC#"
+
+	SubscriptionTopicIndex string = "GSI_TopicID"
 )
 
 type SubscriptionModel struct {
@@ -20,14 +22,10 @@ type SubscriptionModel struct {
 	UpdatedAt       time.Time `dynamodbav:"updatedAt"`
 }
 
-func (SubscriptionModel) TableName() string {
-	return "subscriptions"
+func SubscriptionPk(deviceId string) string {
+	return fmt.Sprintf("%s%s", SubscriptionPkPrefix, deviceId)
 }
 
-func SubscriptionPk(id string) string {
-	return fmt.Sprintf("%s%s", SubscriptionPkPrefix, id)
-}
-
-func SubscriptionSk(id string) string {
-	return fmt.Sprintf("%s%s", SubscriptionSkPrefix, id)
+func SubscriptionSk(topic string) string {
+	return fmt.Sprintf("%s%s", SubscriptionSkPrefix, topic)
 }

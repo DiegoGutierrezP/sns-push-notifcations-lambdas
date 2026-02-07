@@ -28,6 +28,11 @@ type (
 		Region          string `env:"REGION"`
 		AccessKeyId     string `env:"ACCESS_KEY_ID"`
 		SecretAccessKey string `env:"SECRET_ACCESS_KEY"`
+
+		DevicesTable              string `env:"DEVICES_TABLE"`
+		SubscriptionTable         string `env:"SUBSCRIPTION_TABLE"`
+		NotificationRequestsTable string `env:"NOTIFICATION_REQUESTS_TABLE"`
+		NotificationLogsTable     string `env:"NOTIFICATION_LOGS_TABLE"`
 	}
 
 	Optimove struct {

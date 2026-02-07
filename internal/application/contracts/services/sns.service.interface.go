@@ -29,9 +29,9 @@ type ISnsService interface {
 	Unsubscription(ctx context.Context, subscriptionArn string) error
 	UpdateSubscriptionAttributes(ctx context.Context, subscriptionArn string, attrs *SnsSubscriptionAttributes) error
 	UpdateSubscriptionFilterPolicy(ctx context.Context, subscriptionArn string, newFilterPolicy map[string][]string) error
-	Publish(ctx context.Context, topicArn *string, targetArn *string, message any, opts *SnsPublishOptions) error
-	PublishToTopic(ctx context.Context, topicArn string, message any, opts *SnsPublishOptions) error
-	PublishToTarget(ctx context.Context, targetArn string, message any, opts *SnsPublishOptions) error
+	Publish(ctx context.Context, topicArn *string, targetArn *string, message any, opts *SnsPublishOptions) (*string, error)
+	PublishToTopic(ctx context.Context, topicArn string, message any, opts *SnsPublishOptions) (*string, error)
+	PublishToTarget(ctx context.Context, targetArn string, message any, opts *SnsPublishOptions) (*string, error)
 	CreateEndpoint(ctx context.Context, deviceToken string) (string, error)
 	UpdateEndpoint(ctx context.Context, endpointArn string, newToken string) error
 }

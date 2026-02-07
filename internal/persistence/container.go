@@ -11,4 +11,5 @@ func RegisterContainer(c *dig.Container) {
 	_ = c.Provide(database.NewDynamoDbConnection)
 	_ = c.Provide(repositories.NewDeviceRepository)
 	_ = c.Provide(repositories.NewSubscriptionRepository)
+	_ = c.Provide(repositories.NewNotificationRepository)
 }

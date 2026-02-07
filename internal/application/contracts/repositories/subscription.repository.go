@@ -13,4 +13,5 @@ type ISubscriptionRepository interface {
 	UpdateStatus(ctx context.Context, deviceId, topicId string, isActive bool) error
 	UpdateAttributes(ctx context.Context, deviceId, topicId string, attributes string) error
 	DeleteByDevice(ctx context.Context, deviceId string) error
+	CountByTopic(ctx context.Context, topicID string) (int32, error)
 }
