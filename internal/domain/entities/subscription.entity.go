@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// SubscriptionEntity represents the subscription of a device to a specific topic.
 type SubscriptionEntity struct {
 	DeviceId        string
 	TopicId         string

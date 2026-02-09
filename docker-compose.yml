@@ -10,7 +10,6 @@ services:
       - LAMBDA_BIN=register-device
     env_file:
       - .env
-    # entrypoint: ["/bin/sh", "-c", "cp /var/task/$LAMBDA_BIN /var/task/bootstrap && exec /var/task/bootstrap"]
     volumes:
       - ./bin:/var/task
       - ./.env:/var/task/.env:ro
@@ -25,7 +24,6 @@ services:
       - LAMBDA_BIN=update-device
     env_file:
       - .env
-    # entrypoint: ["/bin/sh", "-c", "cp /var/task/$LAMBDA_BIN /var/task/bootstrap && exec /var/task/bootstrap"]
     volumes:
       - ./bin:/var/task
       - ./.env:/var/task/.env:ro
@@ -40,7 +38,6 @@ services:
       - LAMBDA_BIN=device-subscribe
     env_file:
       - .env
-    # entrypoint: ["/bin/sh", "-c", "cp /var/task/$LAMBDA_BIN /var/task/bootstrap && exec /var/task/bootstrap"]
     volumes:
       - ./bin:/var/task
       - ./.env:/var/task/.env:ro
@@ -55,7 +52,6 @@ services:
       - LAMBDA_BIN=device-unsubscribe
     env_file:
       - .env
-    # entrypoint: ["/bin/sh", "-c", "cp /var/task/$LAMBDA_BIN /var/task/bootstrap && exec /var/task/bootstrap"]
     volumes:
       - ./bin:/var/task
       - ./.env:/var/task/.env:ro
@@ -70,50 +66,8 @@ services:
       - LAMBDA_BIN=publish-notification
     env_file:
       - .env
-    # entrypoint: ["/bin/sh", "-c", "cp /var/task/$LAMBDA_BIN /var/task/bootstrap && exec /var/task/bootstrap"]
     volumes:
       - ./bin:/var/task
       - ./.env:/var/task/.env:ro
     ports:
       - "9005:8080"
-
-  # postgres:
-  #   image: postgres:16
-  #   container_name: postgres_db
-  #   # restart: always
-  #   environment:
-  #     POSTGRES_USER: admin
-  #     POSTGRES_PASSWORD: secret
-  #     POSTGRES_DB: push_notifications
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-
-  # redis:
-  #   image: redis:7
-  #   container_name: redis_cache
-  #   # restart: always
-  #   ports:
-  #     - "6379:6379"
-  #   command: ["redis-server", "--appendonly", "yes"]
-  #   volumes:
-  #     - redis_data:/data
-
-  
-  # dynamodb-local:
-  #   image: amazon/dynamodb-local:latest
-  #   container_name: dynamodb-local
-  #   ports:
-  #     - "8000:8000"
-  #   command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
-  #   working_dir: /home/dynamodblocal
-  #   volumes:
-  #     - dynamodb_data:/home/dynamodblocal/data
-  #   restart: unless-stopped
-
-
-# volumes:
-  # dynamodb_data:
-  # postgres_data:
-  # redis_data:

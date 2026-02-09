@@ -88,7 +88,7 @@ func (h *DeliveryStatusLogProcessorHandler) Handler(
 			TopicArn:       dl.Notification.TopicArn,
 			DeliveryStatus: dl.Status,
 			StatusCode:     dl.Delivery.StatusCode,
-			Payload:        le.Message, // guarda el JSON raw si quieres
+			Payload:        le.Message,
 			OccurredAt:     occurredAt,
 		}
 

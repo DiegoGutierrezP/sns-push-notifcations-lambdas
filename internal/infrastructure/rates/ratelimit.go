@@ -12,11 +12,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
+// RateLimiter provides a DynamoDB-backed fixed-window rate limiter.
+// It tracks request counts per key and time window using an atomic UpdateItem
+// with a conditional expression to enforce limits.
 type RateLimiter struct {
 	table  string
 	client *dynamodb.Client
 }
 
+// NewRateLimiter creates a RateLimiter using the configured DynamoDB table.
 func NewRateLimiter(client *dynamodb.Client, config *config.Config) *RateLimiter {
 	return &RateLimiter{
 		table:  config.ApiRateLimitTable,
@@ -24,6 +28,9 @@ func NewRateLimiter(client *dynamodb.Client, config *config.Config) *RateLimiter
 	}
 }
 
+// Allow reports whether a request identified by key is allowed within the current window.
+// It increments the counter atomically and returns false when the limit is reached.
+// windowSeconds defines the fixed window size in seconds, and limit is the max count per window.
 func (r *RateLimiter) Allow(ctx context.Context, key string, limit int, windowSeconds int64) (bool, error) {
 	now := time.Now().Unix()
 	window := now / windowSeconds
@@ -63,6 +70,9 @@ func (r *RateLimiter) Allow(ctx context.Context, key string, limit int, windowSe
 	return true, nil
 }
 
+// Wait blocks until a request for key is allowed within the current window.
+// It retries across windows, sleeping until the next window boundary when the limit is hit.
+// The call returns early if ctx is canceled.
 func (r *RateLimiter) Wait(ctx context.Context, key string, limit int, windowSeconds int64) error {
 	for {
 		ok, err := r.Allow(ctx, key, limit, windowSeconds)

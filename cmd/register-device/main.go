@@ -34,6 +34,7 @@ func init() {
 	}
 }
 
+// main starts the Lambda api gateway that register user device
 func main() {
 	lambda.Start(handler.Handler)
 }

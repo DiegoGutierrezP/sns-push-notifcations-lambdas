@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// NotificationLogModel represents the delivery status log of a message sent to a device
 type NotificationLogModel struct {
 	PK             string    `dynamodbav:"pk"` // messageId
 	SK             string    `dynamodbav:"sk"` // endpointarn

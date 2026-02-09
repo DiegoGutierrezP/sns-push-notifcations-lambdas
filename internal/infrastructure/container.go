@@ -9,6 +9,7 @@ import (
 	"go.uber.org/dig"
 )
 
+// RegisterContainer registers infrastructure-layer use cases in the DI container.
 func RegisterContainer(c *dig.Container) {
 	_ = c.Provide(aws.NewSnsService)
 	_ = c.Provide(logs.NewLogger)

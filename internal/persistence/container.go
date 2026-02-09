@@ -7,6 +7,7 @@ import (
 	"go.uber.org/dig"
 )
 
+// RegisterContainer registers persistence-layer use cases in the DI container.
 func RegisterContainer(c *dig.Container) {
 	_ = c.Provide(database.NewDynamoDbConnection)
 	_ = c.Provide(repositories.NewDeviceRepository)

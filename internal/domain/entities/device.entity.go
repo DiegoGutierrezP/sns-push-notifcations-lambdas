@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// DeviceEntity represents a device registered to receive push notifications.
 type DeviceEntity struct {
 	ID                     uuid.UUID
 	DeviceToken            string

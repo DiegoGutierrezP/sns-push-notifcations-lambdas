@@ -30,6 +30,7 @@ func init() {
 	}
 }
 
+// main starts the Lambda api gateway that updates the user device
 func main() {
 	lambda.Start(handler.Handler)
 }

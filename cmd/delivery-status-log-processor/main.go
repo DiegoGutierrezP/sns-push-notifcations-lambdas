@@ -30,6 +30,7 @@ func init() {
 	}
 }
 
+// main starts the Lambda that processes push notification delivery statuses
 func main() {
 	lambda.Start(handler.Handler)
 }

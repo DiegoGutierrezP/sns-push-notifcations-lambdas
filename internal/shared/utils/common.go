@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Map applies fn to each element of arr and returns a new slice with the results.
 func Map[T any, R any](arr []T, fn func(T) R) []R {
 	result := make([]R, len(arr))
 	for i, v := range arr {
@@ -13,6 +14,9 @@ func Map[T any, R any](arr []T, fn func(T) R) []R {
 	return result
 }
 
+// StructToMap converts a struct (or pointer to struct) into a map using field names
+// or an optional struct tag as keys. It skips unexported fields, fields tagged with "-",
+// and zero-value fields (useful for partial updates, e.g. DynamoDB UpdateItem).
 func StructToMap(obj any, tag ...string) map[string]any {
 	result := make(map[string]any)
 
@@ -68,6 +72,7 @@ func StructToMap(obj any, tag ...string) map[string]any {
 	return result
 }
 
+// Filter returns a new slice containing only the elements that satisfy test.
 func Filter[T any](ss []T, test func(T) bool) (ret []T) {
 	for _, s := range ss {
 		if test(s) {

@@ -29,6 +29,8 @@ func (h *DeviceUnsubscribeHandler) Handler(
 	ctx context.Context,
 	req events.APIGatewayProxyRequest,
 ) (events.APIGatewayProxyResponse, error) {
+	ctx = context.WithValue(ctx, "RequestID", req.RequestContext.RequestID)
+
 	var payload dtos.DeviceUnsubscribeRequest
 
 	if err := json.Unmarshal([]byte(req.Body), &payload); err != nil {

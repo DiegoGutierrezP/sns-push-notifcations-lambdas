@@ -29,6 +29,7 @@ func (h *DeviceSubscribeHandler) Handler(
 	ctx context.Context,
 	req events.APIGatewayProxyRequest,
 ) (events.APIGatewayProxyResponse, error) {
+	ctx = context.WithValue(ctx, "RequestID", req.RequestContext.RequestID)
 
 	var payload dtos.DeviceSubscribeRequest
 

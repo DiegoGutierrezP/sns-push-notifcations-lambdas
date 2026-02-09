@@ -6,6 +6,7 @@ import (
 	"go.uber.org/dig"
 )
 
+// RegisterContainer registers application-layer use cases in the DI container.
 func RegisterContainer(c *dig.Container) {
 	_ = c.Provide(usecases.NewPublishNotificationUseCase)
 	_ = c.Provide(usecases.NewDeviceSubscribeUseCase)

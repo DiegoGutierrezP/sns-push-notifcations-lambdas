@@ -30,6 +30,7 @@ func init() {
 	}
 }
 
+// main starts the Lambda api gateway that subscribes user devices to a specific topic
 func main() {
 	lambda.Start(handler.Handler)
 }

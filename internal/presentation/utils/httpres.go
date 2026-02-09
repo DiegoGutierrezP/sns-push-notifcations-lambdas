@@ -15,6 +15,9 @@ var defaultHeaders = map[string]string{
 	"Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
 }
 
+// JSON builds an API Gateway proxy response with a JSON body and merged headers.
+// It applies default JSON/CORS headers and overrides them with any provided headers.
+// If marshaling fails, it returns a 500 response with a standard error payload.
 func JSON(status int, payload any, headers map[string]string) events.APIGatewayProxyResponse {
 	raw, err := json.Marshal(payload)
 	if err != nil {
@@ -27,12 +30,7 @@ func JSON(status int, payload any, headers map[string]string) events.APIGatewayP
 	}
 
 	h := make(map[string]string, len(defaultHeaders)+(len(headers)))
-	// for k, v := range defaultHeaders {
-	// 	h[k] = v
-	// }
-	// for k, v := range headers {
-	// 	h[k] = v
-	// }
+
 	maps.Copy(h, defaultHeaders)
 	maps.Copy(h, headers)
 
@@ -43,6 +41,7 @@ func JSON(status int, payload any, headers map[string]string) events.APIGatewayP
 	}
 }
 
+// Success returns a standardized successful JSON response using ApiResponse[T].
 func Success[T any](status int, msg string, data *T) events.APIGatewayProxyResponse {
 	return JSON(status, dtos.ApiResponse[T]{
 		Success: true,
@@ -51,6 +50,7 @@ func Success[T any](status int, msg string, data *T) events.APIGatewayProxyRespo
 	}, nil)
 }
 
+// Fail returns a standardized error JSON response using ApiResponse.
 func Fail(status int, msg string, err string) events.APIGatewayProxyResponse {
 	return JSON(status, dtos.ApiResponse[any]{
 		Success: false,
