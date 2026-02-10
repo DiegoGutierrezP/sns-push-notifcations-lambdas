@@ -245,7 +245,6 @@ func (s *SnsService) Publish(
 	opts *services.SnsPublishOptions,
 ) (*string, error) {
 
-	// Validación obligatoria
 	if topicArn == nil && targetArn == nil {
 		return nil, fmt.Errorf("debes enviar topicArn o targetArn")
 	}
@@ -256,7 +255,7 @@ func (s *SnsService) Publish(
 
 	input := &sns.PublishInput{}
 
-	// 1. Elegir destino
+	// Destino
 	if topicArn != nil {
 		input.TopicArn = topicArn
 	}
@@ -264,21 +263,30 @@ func (s *SnsService) Publish(
 		input.TargetArn = targetArn
 	}
 
-	// 2. Procesar payload
+	// Serializar mensaje
 	switch m := message.(type) {
 	case string:
 		input.Message = aws.String(m)
+		// Si es TOPIC, y viene como string, intentar activar MessageStructure solo si es un multi-protocolo válido
+		if topicArn != nil {
+			input.MessageStructure = aws.String("json")
+		}
 	default:
-		jsonBody, err := json.Marshal(m)
+		b, err := json.Marshal(m)
 		if err != nil {
 			return nil, fmt.Errorf("error serializando json: %w", err)
 		}
-		input.Message = aws.String(string(jsonBody))
-		input.MessageStructure = aws.String("json")
+		input.Message = aws.String(string(b))
+
+		// Para TOPIC siempre usamos mensaje multi‑protocolo
+		if topicArn != nil {
+			input.MessageStructure = aws.String("json")
+		}
 	}
 
-	// 3. Opciones
+	// Opciones adicionales
 	if opts != nil {
+
 		if opts.Subject != nil {
 			input.Subject = aws.String(*opts.Subject)
 		}
@@ -294,14 +302,21 @@ func (s *SnsService) Publish(
 		if opts.MessageDedupId != "" {
 			input.MessageDeduplicationId = aws.String(opts.MessageDedupId)
 		}
+
+		// Permitir override explícito
+		if opts.MessageStructure != nil {
+			input.MessageStructure = opts.MessageStructure
+		}
 	}
 
-	// 4. Enviar
+	// Publicar
 	res, err := s.client.Publish(ctx, input)
+	if err != nil {
+		return nil, err
+	}
 
-	fmt.Println(res.MessageId)
+	return res.MessageId, nil
 
-	return res.MessageId, err
 }
 
 func (s *SnsService) PublishToTopic(ctx context.Context, topicArn string, message any, opts *services.SnsPublishOptions) (*string, error) {

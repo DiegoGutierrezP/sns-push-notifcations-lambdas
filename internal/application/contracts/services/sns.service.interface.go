@@ -17,11 +17,11 @@ type SnsSubscriptionAttributes struct {
 type SnsMessageAttributes map[string]snsTypes.MessageAttributeValue
 
 type SnsPublishOptions struct {
-	Subject        *string
-	Attributes     SnsMessageAttributes
-	MessageGroupId string // para FIFO
-	MessageDedupId string // para FIFO
-	Structure      string // json | string
+	Subject          *string
+	Attributes       SnsMessageAttributes
+	MessageGroupId   string  // para FIFO
+	MessageDedupId   string  // para FIFO
+	MessageStructure *string // json | string
 }
 
 type ISnsService interface {

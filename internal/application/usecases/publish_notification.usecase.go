@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
@@ -114,17 +115,21 @@ func (uc *PublishNotificationUseCase) buildPushMessage(
 	attributes map[string]string,
 ) (dtos.PushMessage, services.SnsPublishOptions) {
 
-	// Android (Firebase / GCM)
-	gcm := map[string]any{
-		"notification": map[string]any{
-			"title": title,
-			"body":  body,
+	// --- ANDROID (FCM v1) ---
+	gcmMap := map[string]any{
+		"fcmV1Message": map[string]any{
+			"message": map[string]any{
+				"notification": map[string]any{
+					"title": title,
+					"body":  body,
+				},
+				"data": data,
+			},
 		},
-		"data": data,
 	}
 
-	// iOS (APNS)
-	apns := map[string]any{
+	// --- iOS (APNS) ---
+	apnsMap := map[string]any{
 		"aps": map[string]any{
 			"alert": map[string]any{
 				"title": title,
@@ -133,35 +138,38 @@ func (uc *PublishNotificationUseCase) buildPushMessage(
 			"sound": "default",
 		},
 	}
-
-	// Adjuntar data custom fuera de "aps"
 	for k, v := range data {
-		apns[k] = v
+		apnsMap[k] = v
 	}
+
+	// Serializar a STRING JSON (requisito SNS)
+	gcmStr, _ := json.Marshal(gcmMap)
+	apnsStr, _ := json.Marshal(apnsMap)
 
 	pushMessage := dtos.PushMessage{
 		Default: body,
-		GCM:     gcm,
-		APNS:    apns,
+		GCM:     string(gcmStr),  // <--- SNS exige STRING JSON
+		APNS:    string(apnsStr), // <--- SNS exige STRING JSON
 	}
 
-	// publish options
-	publishOptions := services.SnsPublishOptions{
-		Subject: title,
+	// Opciones de publicación
+	opts := services.SnsPublishOptions{
+		Subject: aws.String(*title),
+		// Esto lo sobreescribe Publish() si targetArn != nil
+		MessageStructure: aws.String("json"),
 	}
 
+	// Si hay atributos, los agregamos
 	if attributes != nil {
 		attrs := services.SnsMessageAttributes{}
-
 		for k, v := range attributes {
 			attrs[k] = types.MessageAttributeValue{
 				DataType:    aws.String("String"),
 				StringValue: aws.String(v),
 			}
 		}
-
-		publishOptions.Attributes = attrs
+		opts.Attributes = attrs
 	}
 
-	return pushMessage, publishOptions
+	return pushMessage, opts
 }

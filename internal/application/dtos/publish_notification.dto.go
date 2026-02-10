@@ -11,8 +11,8 @@ type PublishNotificationRequest struct {
 
 type PushMessage struct {
 	Default string `json:"default"`
-	GCM     any    `json:"GCM"`
-	APNS    any    `json:"APNS"`
+	GCM     string `json:"GCM"`
+	APNS    string `json:"APNS"`
 }
 
 type PublishNotificationResponse struct {
