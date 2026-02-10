@@ -18,21 +18,21 @@ type (
 	}
 
 	Sns struct {
-		Region          string `env:"REGION"`
-		AccessKeyId     string `env:"ACCESS_KEY_ID"`
-		SecretAccessKey string `env:"SECRET_ACCESS_KEY"`
-		PlatformAppArn  string `env:"PLATFORM_APPLICATION_ARN"`
+		Region          string `env:"REGION,required"`
+		AccessKeyId     string `env:"ACCESS_KEY_ID,required"`
+		SecretAccessKey string `env:"SECRET_ACCESS_KEY,required"`
+		PlatformAppArn  string `env:"PLATFORM_APPLICATION_ARN,required"`
 	}
 
 	DynamoDb struct {
-		Region          string `env:"REGION"`
-		AccessKeyId     string `env:"ACCESS_KEY_ID"`
-		SecretAccessKey string `env:"SECRET_ACCESS_KEY"`
+		Region          string `env:"REGION,required"`
+		AccessKeyId     string `env:"ACCESS_KEY_ID,required"`
+		SecretAccessKey string `env:"SECRET_ACCESS_KEY,required"`
 
-		DevicesTable              string `env:"DEVICES_TABLE"`
-		SubscriptionTable         string `env:"SUBSCRIPTION_TABLE"`
-		NotificationRequestsTable string `env:"NOTIFICATION_REQUESTS_TABLE"`
-		NotificationLogsTable     string `env:"NOTIFICATION_LOGS_TABLE"`
+		DevicesTable              string `env:"DEVICES_TABLE,required"`
+		SubscriptionTable         string `env:"SUBSCRIPTION_TABLE,required"`
+		NotificationRequestsTable string `env:"NOTIFICATION_REQUESTS_TABLE,required"`
+		NotificationLogsTable     string `env:"NOTIFICATION_LOGS_TABLE,required"`
 	}
 
 	Optimove struct {
@@ -48,31 +48,19 @@ var (
 )
 
 func GetConfig() *Config {
-	// once.Do(func() {
-	// 	if err := godotenv.Load(); err != nil {
-	// 		panic("Error cargando .env: " + err.Error())
-	// 	}
-
-	// 	if err := env.Parse(&configInstance); err != nil {
-	// 		panic(err)
-	// 	}
-	// })
-	// // fmt.Printf("%+v", configInstance)
-	// return &configInstance
-
 	once.Do(func() {
 		//Intenta cargar .env SOLO si existe (en Lambda normalmente NO existe)
 		if _, err := os.Stat(".env"); err == nil {
 			if err := godotenv.Load(); err != nil {
-				log.Printf("Advertencia: no se pudo cargar .env: %v", err)
+				log.Printf("Warning: .env could not be loaded: %v", err)
 			}
 		} else {
-			log.Println("No se encontró .env. Continuando con variables de entorno.")
+			log.Println(".env not found. Continuing with environment variables.")
 		}
 
 		// Parsear variables de entorno reales (de Lambda)
 		if err := env.Parse(&configInstance); err != nil {
-			log.Panicf("Error parseando variables de entorno: %v", err)
+			log.Panicf("Error parsing environment variables: %v", err)
 		}
 	})
 	return &configInstance

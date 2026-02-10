@@ -39,9 +39,6 @@ RUN apt-get update && apt-get install -y zip && \
 # ------------------------------------------------------------
 # Stage 2: Export (artefactos listos en /out/bin)
 # ------------------------------------------------------------
-# FROM alpine:3.20 AS export
-# WORKDIR /out/bin
-# COPY --from=builder /out/bin /out/bin
 
 FROM public.ecr.aws/lambda/provided:al2
 
@@ -57,6 +54,4 @@ RUN printf '%s\n' \
     'exec "/var/task/${LAMBDA_BIN}"' \
     > "${LAMBDA_RUNTIME_DIR}/bootstrap" && chmod +x "${LAMBDA_RUNTIME_DIR}/bootstrap"
 
-# wrapper: copia el binario que quieres como bootstrap
-# CMD ["bootstrap"]
 CMD ["handler"]
