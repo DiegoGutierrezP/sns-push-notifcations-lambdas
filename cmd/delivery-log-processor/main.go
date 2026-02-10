@@ -12,7 +12,7 @@ import (
 	"go.uber.org/dig"
 )
 
-var handler *handlers.DeliveryStatusLogProcessorHandler
+var handler *handlers.DeliveryLogProcessorHandler
 
 func init() {
 	c := dig.New()
@@ -23,7 +23,7 @@ func init() {
 	application.RegisterContainer(c)
 	presentation.RegisterContainer(c)
 
-	if err := c.Invoke(func(h *handlers.DeliveryStatusLogProcessorHandler) {
+	if err := c.Invoke(func(h *handlers.DeliveryLogProcessorHandler) {
 		handler = h
 	}); err != nil {
 		panic(err)

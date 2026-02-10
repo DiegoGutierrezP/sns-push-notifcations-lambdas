@@ -27,13 +27,14 @@ RUN mkdir -p /out/bin && \
     go build -ldflags="-s -w" -o /out/bin/device-unsubscribe     ./cmd/device-unsubscribe && \
     go build -ldflags="-s -w" -o /out/bin/publish-notification ./cmd/publish-notification && \
     go build -ldflags="-s -w" -o /out/bin/register-device    ./cmd/register-device && \
-    go build -ldflags="-s -w" -o /out/bin/update-device    ./cmd/update-device
+    go build -ldflags="-s -w" -o /out/bin/update-device    ./cmd/update-device && \
+    go build -ldflags="-s -w" -o /out/bin/delivery-log-processor    ./cmd/delivery-log-processor
 
 RUN chmod +x /out/bin/*
 
 # (Opcional) Generar ZIPs para despliegue tradicional
 RUN apt-get update && apt-get install -y zip && \
-    (cd /out/bin && for f in device-subscribe device-unsubscribe publish-notification register-device update-device; do zip -q "$f.zip" "$f"; done)
+    (cd /out/bin && for f in device-subscribe device-unsubscribe publish-notification register-device update-device delivery-log-processor; do zip -q "$f.zip" "$f"; done)
 
 # ------------------------------------------------------------
 # Stage 2: Export (artefactos listos en /out/bin)

@@ -13,5 +13,5 @@ func RegisterContainer(c *dig.Container) {
 	_ = c.Provide(handlers.NewSendNotificationHandler)
 	_ = c.Provide(handlers.NewRegisterDeviceHandler)
 	_ = c.Provide(handlers.NewUpdateDeviceHandler)
-	_ = c.Provide(handlers.NewDeliveryStatusLogProcessorHandler)
+	_ = c.Provide(handlers.NewDeliveryLogProcessorHandler)
 }

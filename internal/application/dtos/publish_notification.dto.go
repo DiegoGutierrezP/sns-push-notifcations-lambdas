@@ -14,3 +14,8 @@ type PushMessage struct {
 	GCM     any    `json:"GCM"`
 	APNS    any    `json:"APNS"`
 }
+
+type PublishNotificationResponse struct {
+	MessageId    string `json:"messageId"`
+	TotalDevices *int   `json:"totalDevices"`
+}

@@ -35,19 +35,19 @@ type cwLogsLogEvent struct {
 
 // Handler
 
-type DeliveryStatusLogProcessorHandler struct {
+type DeliveryLogProcessorHandler struct {
 	usecase *usecases.SaveDeliveryStatusLogUseCase
 }
 
-func NewDeliveryStatusLogProcessorHandler(
+func NewDeliveryLogProcessorHandler(
 	usecase *usecases.SaveDeliveryStatusLogUseCase,
-) *DeliveryStatusLogProcessorHandler {
-	return &DeliveryStatusLogProcessorHandler{
+) *DeliveryLogProcessorHandler {
+	return &DeliveryLogProcessorHandler{
 		usecase: usecase,
 	}
 }
 
-func (h *DeliveryStatusLogProcessorHandler) Handler(
+func (h *DeliveryLogProcessorHandler) Handler(
 	ctx context.Context,
 	evt events.CloudwatchLogsEvent,
 ) error {

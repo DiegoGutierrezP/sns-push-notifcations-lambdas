@@ -34,7 +34,7 @@ func NewPublishNotificationUseCase(
 	}
 }
 
-func (uc *PublishNotificationUseCase) Execute(ctx context.Context, rq dtos.PublishNotificationRequest) error {
+func (uc *PublishNotificationUseCase) Execute(ctx context.Context, rq dtos.PublishNotificationRequest) (*dtos.PublishNotificationResponse, error) {
 	uc.logger.Info("PublishNotificationUseCase started:",
 		"TopicArn", rq.TopicArn,
 		"TargetArn", rq.TargetArn,
@@ -43,7 +43,7 @@ func (uc *PublishNotificationUseCase) Execute(ctx context.Context, rq dtos.Publi
 	if rq.TargetArn == nil && rq.TopicArn == nil {
 		uc.logger.Error("targetArn and topicArn are empty")
 
-		return fmt.Errorf("targetArn or topicArn is required")
+		return nil, fmt.Errorf("targetArn or topicArn is required")
 	}
 
 	pushMessage, publishOptions := uc.buildPushMessage(rq.Title, rq.Body, rq.Data, rq.Attributes)
@@ -67,7 +67,7 @@ func (uc *PublishNotificationUseCase) Execute(ctx context.Context, rq dtos.Publi
 
 		notificationRequestDto.Status = constants.NotificationRequestStatusFailed
 
-		return fmt.Errorf("An error occurred while publishing notification: %w", err)
+		return nil, fmt.Errorf("An error occurred while publishing notification: %w", err)
 	}
 
 	if rq.TopicArn != nil {
@@ -101,7 +101,10 @@ func (uc *PublishNotificationUseCase) Execute(ctx context.Context, rq dtos.Publi
 		"targetArn", rq.TargetArn,
 	)
 
-	return nil
+	return &dtos.PublishNotificationResponse{
+		MessageId:    *messageId,
+		TotalDevices: &notificationRequestDto.TotalDevices,
+	}, nil
 }
 
 func (uc *PublishNotificationUseCase) buildPushMessage(
