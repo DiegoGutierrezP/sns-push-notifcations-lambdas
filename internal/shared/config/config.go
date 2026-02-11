@@ -18,16 +18,12 @@ type (
 	}
 
 	Sns struct {
-		Region          string `env:"REGION,required"`
-		AccessKeyId     string `env:"ACCESS_KEY_ID,required"`
-		SecretAccessKey string `env:"SECRET_ACCESS_KEY,required"`
-		PlatformAppArn  string `env:"PLATFORM_APPLICATION_ARN,required"`
+		Region         string `env:"REGION,required"`
+		PlatformAppArn string `env:"PLATFORM_APPLICATION_ARN,required"`
 	}
 
 	DynamoDb struct {
-		Region          string `env:"REGION,required"`
-		AccessKeyId     string `env:"ACCESS_KEY_ID,required"`
-		SecretAccessKey string `env:"SECRET_ACCESS_KEY,required"`
+		Region string `env:"REGION,required"`
 
 		DevicesTable              string `env:"DEVICES_TABLE,required"`
 		SubscriptionTable         string `env:"SUBSCRIPTION_TABLE,required"`

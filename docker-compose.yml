@@ -8,11 +8,14 @@ services:
     # command: ["register-device"]
     environment:
       - LAMBDA_BIN=register-device
+      - AWS_PROFILE=digital-dev-diego
+      - AWS_REGION=us-east-1
     env_file:
       - .env
     volumes:
       - ./bin:/var/task
       - ./.env:/var/task/.env:ro
+      - ~/.aws:/root/.aws:ro
     ports:
       - "9001:8080"
 
@@ -22,11 +25,14 @@ services:
     # command: ["register-device"]
     environment:
       - LAMBDA_BIN=update-device
+      - AWS_PROFILE=digital-dev-diego
+      - AWS_REGION=us-east-1
     env_file:
       - .env
     volumes:
       - ./bin:/var/task
       - ./.env:/var/task/.env:ro
+      - ~/.aws:/root/.aws:ro
     ports:
       - "9002:8080"
 
@@ -36,11 +42,14 @@ services:
     # command: ["device-subscribe"]
     environment:
       - LAMBDA_BIN=device-subscribe
+      - AWS_PROFILE=digital-dev-diego
+      - AWS_REGION=us-east-1
     env_file:
       - .env
     volumes:
       - ./bin:/var/task
       - ./.env:/var/task/.env:ro
+      - ~/.aws:/root/.aws:ro
     ports:
       - "9003:8080"
 
@@ -50,11 +59,14 @@ services:
     # command: ["device-unsubscribe"]
     environment:
       - LAMBDA_BIN=device-unsubscribe
+      - AWS_PROFILE=digital-dev-diego
+      - AWS_REGION=us-east-1
     env_file:
       - .env
     volumes:
       - ./bin:/var/task
       - ./.env:/var/task/.env:ro
+      - ~/.aws:/root/.aws:ro
     ports:
       - "9004:8080"
 
@@ -64,10 +76,13 @@ services:
     # command: ["publish-notification"]
     environment:
       - LAMBDA_BIN=publish-notification
+      - AWS_PROFILE=digital-dev-diego
+      - AWS_REGION=us-east-1
     env_file:
       - .env
     volumes:
       - ./bin:/var/task
       - ./.env:/var/task/.env:ro
+      - ~/.aws:/root/.aws:ro
     ports:
       - "9005:8080"

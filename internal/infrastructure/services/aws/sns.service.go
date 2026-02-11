@@ -11,7 +11,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 )
 
@@ -21,15 +20,9 @@ type SnsService struct {
 }
 
 func NewSnsService(cfg *appConfig.Config) (services.ISnsService, error) {
-	creds := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
-		cfg.Sns.AccessKeyId,
-		cfg.Sns.SecretAccessKey,
-		"",
-	))
 
 	awsCfg, err := config.LoadDefaultConfig(context.Background(),
 		config.WithRegion(cfg.Sns.Region),
-		config.WithCredentialsProvider(creds),
 	)
 
 	if err != nil {
