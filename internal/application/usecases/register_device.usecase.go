@@ -10,6 +10,10 @@ import (
 	"log/slog"
 )
 
+type IRegisterDeviceUseCase interface {
+	Execute(ctx context.Context, request dtos.RegisterDeviceRequest) (*dtos.RegisterDeviceResponse, error)
+}
+
 type RegisterDeviceUseCase struct {
 	snsService       services.ISnsService
 	deviceRepository repositories.IDeviceRepository
@@ -20,7 +24,7 @@ func NewRegisterDeviceUseCase(
 	snsService services.ISnsService,
 	deviceRepository repositories.IDeviceRepository,
 	logger *slog.Logger,
-) *RegisterDeviceUseCase {
+) IRegisterDeviceUseCase {
 	return &RegisterDeviceUseCase{
 		snsService:       snsService,
 		deviceRepository: deviceRepository,

@@ -14,11 +14,11 @@ import (
 )
 
 type RegisterDeviceHandler struct {
-	usecase *usecases.RegisterDeviceUseCase
+	usecase usecases.IRegisterDeviceUseCase
 }
 
 func NewRegisterDeviceHandler(
-	usecase *usecases.RegisterDeviceUseCase,
+	usecase usecases.IRegisterDeviceUseCase,
 ) *RegisterDeviceHandler {
 	return &RegisterDeviceHandler{
 		usecase: usecase,

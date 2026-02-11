@@ -14,6 +14,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns/types"
 )
 
+type IPublishNotificationUseCase interface {
+	Execute(ctx context.Context, rq dtos.PublishNotificationRequest) (*dtos.PublishNotificationResponse, error)
+}
+
 type PublishNotificationUseCase struct {
 	snsService             services.ISnsService
 	notificationRepository repositories.INotificationRepository
@@ -26,7 +30,7 @@ func NewPublishNotificationUseCase(
 	notificationRepository repositories.INotificationRepository,
 	subscriptionRepository repositories.ISubscriptionRepository,
 	logger *slog.Logger,
-) *PublishNotificationUseCase {
+) IPublishNotificationUseCase {
 	return &PublishNotificationUseCase{
 		snsService:             snsService,
 		notificationRepository: notificationRepository,

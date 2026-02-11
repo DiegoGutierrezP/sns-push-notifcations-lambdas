@@ -11,6 +11,10 @@ import (
 	"log/slog"
 )
 
+type IDeviceSubscribeUseCase interface {
+	Execute(ctx context.Context, rq dtos.DeviceSubscribeRequest) (*dtos.DeviceSubscribeResponse, error)
+}
+
 type DeviceSubscribeUseCase struct {
 	snsService             services.ISnsService
 	deviceRepository       repositories.IDeviceRepository
@@ -23,7 +27,7 @@ func NewDeviceSubscribeUseCase(
 	deviceRepository repositories.IDeviceRepository,
 	subscriptionRepository repositories.ISubscriptionRepository,
 	logger *slog.Logger,
-) *DeviceSubscribeUseCase {
+) IDeviceSubscribeUseCase {
 	return &DeviceSubscribeUseCase{
 		snsService:             snsService,
 		deviceRepository:       deviceRepository,

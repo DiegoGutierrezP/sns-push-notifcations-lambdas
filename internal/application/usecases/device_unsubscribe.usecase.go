@@ -9,6 +9,10 @@ import (
 	"log/slog"
 )
 
+type IDeviceUnsubscribeUseCase interface {
+	Execute(ctx context.Context, rq dtos.DeviceUnsubscribeRequest) (*dtos.DeviceUnsubscribeResponse, error)
+}
+
 type DeviceUnsubscribeUseCase struct {
 	snsService             services.ISnsService
 	deviceRepository       repositories.IDeviceRepository
@@ -21,7 +25,7 @@ func NewDeviceUnsubscribeUseCase(
 	deviceRepository repositories.IDeviceRepository,
 	subscriptionRepository repositories.ISubscriptionRepository,
 	logger *slog.Logger,
-) *DeviceUnsubscribeUseCase {
+) IDeviceUnsubscribeUseCase {
 	return &DeviceUnsubscribeUseCase{
 		snsService:             snsService,
 		deviceRepository:       deviceRepository,

@@ -14,11 +14,11 @@ import (
 )
 
 type PublishNotificationHandler struct {
-	usecase *usecases.PublishNotificationUseCase
+	usecase usecases.IPublishNotificationUseCase
 }
 
 func NewSendNotificationHandler(
-	usecase *usecases.PublishNotificationUseCase,
+	usecase usecases.IPublishNotificationUseCase,
 ) *PublishNotificationHandler {
 	return &PublishNotificationHandler{
 		usecase: usecase,

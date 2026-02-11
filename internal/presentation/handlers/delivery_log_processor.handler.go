@@ -36,11 +36,11 @@ type cwLogsLogEvent struct {
 // Handler
 
 type DeliveryLogProcessorHandler struct {
-	usecase *usecases.SaveDeliveryStatusLogUseCase
+	usecase usecases.ISaveDeliveryStatusLogUseCase
 }
 
 func NewDeliveryLogProcessorHandler(
-	usecase *usecases.SaveDeliveryStatusLogUseCase,
+	usecase usecases.ISaveDeliveryStatusLogUseCase,
 ) *DeliveryLogProcessorHandler {
 	return &DeliveryLogProcessorHandler{
 		usecase: usecase,

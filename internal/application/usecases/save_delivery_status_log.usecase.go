@@ -7,6 +7,10 @@ import (
 	"log/slog"
 )
 
+type ISaveDeliveryStatusLogUseCase interface {
+	Execute(ctx context.Context, in dtos.SaveDeliveryStatusInput) error
+}
+
 type SaveDeliveryStatusLogUseCase struct {
 	notificationRepository repositories.INotificationRepository
 	logger                 *slog.Logger
@@ -15,7 +19,7 @@ type SaveDeliveryStatusLogUseCase struct {
 func NewSaveDeliveryStatusLogUseCase(
 	logger *slog.Logger,
 	notificationRepository repositories.INotificationRepository,
-) *SaveDeliveryStatusLogUseCase {
+) ISaveDeliveryStatusLogUseCase {
 	return &SaveDeliveryStatusLogUseCase{
 		logger:                 logger,
 		notificationRepository: notificationRepository,

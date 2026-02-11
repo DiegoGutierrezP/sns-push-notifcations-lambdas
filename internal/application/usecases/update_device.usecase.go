@@ -13,6 +13,10 @@ import (
 	"time"
 )
 
+type IUpdateDeviceUseCase interface {
+	Execute(ctx context.Context, rq dtos.UpdateDeviceRequest) (*dtos.UpdateDeviceResponse, error)
+}
+
 type UpdateDeviceUseCase struct {
 	snsService              services.ISnsService
 	deviceRepository        repositories.IDeviceRepository
