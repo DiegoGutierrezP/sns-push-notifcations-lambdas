@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"lmbd-digital-push-notifications/internal/application/dtos"
+	appErrors "lmbd-digital-push-notifications/internal/application/errors"
 	"lmbd-digital-push-notifications/internal/application/usecases"
 	validation "lmbd-digital-push-notifications/internal/application/validations"
+	domainErrors "lmbd-digital-push-notifications/internal/domain/errors"
 	httpres "lmbd-digital-push-notifications/internal/presentation/utils"
-	"log"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -34,21 +35,35 @@ func (h *DeviceUnsubscribeHandler) Handler(
 	var payload dtos.DeviceUnsubscribeRequest
 
 	if err := json.Unmarshal([]byte(req.Body), &payload); err != nil {
-		return httpres.Fail(http.StatusBadRequest, "Request inválido", err.Error()), nil
+		return httpres.AppFail(appErrors.NewApplicationError(
+			domainErrors.APIInvalidRequestFormat,
+			http.StatusBadRequest,
+			"Request inválido",
+		)), nil
 	}
 
 	if err := validation.Validate.Struct(payload); err != nil {
-		return httpres.Fail(http.StatusUnprocessableEntity, "Validación fallida",
+		return httpres.AppFail(appErrors.NewApplicationError(
+			domainErrors.APIInvalidRequestFormat,
+			http.StatusUnprocessableEntity,
 			validation.StringValidationErrors(err),
-		), nil
+		)), nil
 	}
 
 	resp, err := h.usecase.Execute(ctx, payload)
 
 	if err != nil {
-		log.Printf("error procesando request: %v", err)
-		return httpres.Fail(http.StatusInternalServerError, "error interno", err.Error()), nil
+		return httpres.AppFail(err), nil
 	}
 
-	return httpres.Success(http.StatusOK, "Dispositivos desuscritos correctamente", resp), nil
+	var successMessage string
+	if resp.Unsubscriptions != nil {
+		successMessage = "Dispositivos desuscritos correctamente"
+	}
+
+	return httpres.Success(
+		http.StatusOK,
+		successMessage,
+		resp,
+	), nil
 }

@@ -2,11 +2,13 @@ package usecases
 
 import (
 	"context"
-	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
 	"lmbd-digital-push-notifications/internal/application/dtos"
+	appErrors "lmbd-digital-push-notifications/internal/application/errors"
+	domainErrors "lmbd-digital-push-notifications/internal/domain/errors"
 	"log/slog"
+	"net/http"
 )
 
 type IDeviceUnsubscribeUseCase interface {
@@ -51,7 +53,13 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 			"calimacoId", rq.CalimacoId,
 			"err", err,
 		)
-		return nil, fmt.Errorf("An error occurred, searching devices for calimaco id %d", rq.CalimacoId)
+		// return nil, fmt.Errorf("An error occurred, searching devices for calimaco id %d", rq.CalimacoId)
+		return nil, appErrors.NewApplicationError(
+			domainErrors.DDBQueryFailed,
+			http.StatusBadRequest,
+			"An error occurred, searching devices",
+			err,
+		)
 	}
 
 	if len(devices) == 0 {
@@ -59,12 +67,19 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 			"requestId", requestID,
 			"calimacoId", rq.CalimacoId,
 		)
-		return nil, fmt.Errorf("No devices found for calimaco id %d", rq.CalimacoId)
+		// return nil, fmt.Errorf("No devices found for calimaco id %d", rq.CalimacoId)
+		return nil, appErrors.NewApplicationError(
+			domainErrors.DEVUserWithoutDevices,
+			http.StatusNotFound,
+			"No devices found for calimaco id",
+			nil,
+		)
 	}
 
-	var devicesUnsubscribed []string
+	unsubscriptions := make([]dtos.DeviceUnsubscribedDto, 0, len(devices))
 
 	for _, device := range devices {
+
 		subscription, err := uc.subscriptionRepository.Get(ctx, device.ID.String(), rq.TopicArn)
 
 		if err != nil {
@@ -83,8 +98,13 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 				"deviceId", device.ID,
 				"topicArn", rq.TopicArn,
 			)
-
 			continue
+		}
+
+		deviceUnubscribedResult := dtos.DeviceUnsubscribedDto{
+			DeviceId:        device.ID.String(),
+			SubscriptionArn: subscription.SubscriptionArn,
+			Success:         true,
 		}
 
 		uc.logger.Info("SubscriptionArn found",
@@ -98,6 +118,9 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 				"subscriptionArn", subscription.SubscriptionArn,
 				"err", err,
 			)
+
+			deviceUnubscribedResult.Success = false
+			unsubscriptions = append(unsubscriptions, deviceUnubscribedResult)
 			continue
 		}
 
@@ -109,10 +132,20 @@ func (uc *DeviceUnsubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceU
 			"subscriptionArn", subscription.SubscriptionArn,
 		)
 
-		devicesUnsubscribed = append(devicesUnsubscribed, device.ID.String())
+		unsubscriptions = append(unsubscriptions, deviceUnubscribedResult)
+	}
+
+	if len(unsubscriptions) == 0 {
+		return nil, appErrors.NewApplicationError(
+			domainErrors.SUBSNotSubscribed,
+			http.StatusNotFound,
+			"No subscription found",
+			nil,
+		)
 	}
 
 	return &dtos.DeviceUnsubscribeResponse{
-		Devices: devicesUnsubscribed,
+		TopicArn:        rq.TopicArn,
+		Unsubscriptions: unsubscriptions,
 	}, nil
 }

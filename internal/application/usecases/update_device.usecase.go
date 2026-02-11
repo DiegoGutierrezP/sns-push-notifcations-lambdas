@@ -6,9 +6,12 @@ import (
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
 	"lmbd-digital-push-notifications/internal/application/dtos"
+	appErrors "lmbd-digital-push-notifications/internal/application/errors"
 	"lmbd-digital-push-notifications/internal/domain/entities"
+	domainErrors "lmbd-digital-push-notifications/internal/domain/errors"
 	"lmbd-digital-push-notifications/internal/shared/config"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -33,7 +36,7 @@ func NewUpdateDeviceUseCase(
 	subscriptionRepository repositories.ISubscriptionRepository,
 	optimoveGateway services.IOptimoveGateway,
 	logger *slog.Logger,
-) *UpdateDeviceUseCase {
+) IUpdateDeviceUseCase {
 	return &UpdateDeviceUseCase{
 		snsService:              snsService,
 		deviceRepository:        deviceRepository,
@@ -63,7 +66,13 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 			"requestId", requestID,
 			"err", err,
 		)
-		return nil, fmt.Errorf("An error occurred while searching for the device.")
+		// return nil, fmt.Errorf("An error occurred while searching for the device.")
+		return nil, appErrors.NewApplicationError(
+			domainErrors.DDBQueryFailed,
+			http.StatusBadRequest,
+			"An error occurred while searching for the device",
+			err,
+		)
 	}
 
 	if device == nil {
@@ -71,7 +80,13 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 			"requestId", requestID,
 			"deviceId", rq.DeviceId,
 		)
-		return nil, fmt.Errorf("Device not found")
+		// return nil, fmt.Errorf("Device not found")
+		return nil, appErrors.NewApplicationError(
+			domainErrors.DEVNotFound,
+			http.StatusBadRequest,
+			"Device not found",
+			err,
+		)
 	}
 
 	if rq.DeviceToken != nil {
@@ -89,7 +104,13 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 				"deviceToken", rq.DeviceToken,
 			)
 
-			return nil, fmt.Errorf("An Error ocurred while checking if device token exists: %w", err)
+			// return nil, fmt.Errorf("An Error ocurred while checking if device token exists: %w", err)
+			return nil, appErrors.NewApplicationError(
+				domainErrors.DDBQueryFailed,
+				http.StatusBadRequest,
+				"An Error ocurred while checking if device token exists",
+				err,
+			)
 		}
 		if exists {
 			uc.logger.Warn("token already registered on another device",
@@ -98,7 +119,13 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 				"deviceToken", rq.DeviceToken,
 			)
 
-			return nil, fmt.Errorf("token already registered on another device")
+			// return nil, fmt.Errorf("token already registered on another device")
+			return nil, appErrors.NewApplicationError(
+				domainErrors.DEVTokenAlreadyExists,
+				http.StatusBadRequest,
+				"token already registered on another device",
+				err,
+			)
 		}
 	}
 
@@ -113,7 +140,13 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 			"requestId", requestID,
 			"deviceId", rq.DeviceId,
 		)
-		return nil, fmt.Errorf("An error occurred while updating device entity: %w", err)
+		// return nil, fmt.Errorf("An error occurred while updating device entity: %w", err)
+		return nil, appErrors.NewApplicationError(
+			domainErrors.DDBUpdateFailed,
+			http.StatusBadRequest,
+			"An error occurred while updating device entity",
+			err,
+		)
 	}
 
 	// update device token in endpoint
@@ -127,7 +160,13 @@ func (uc *UpdateDeviceUseCase) Execute(ctx context.Context, rq dtos.UpdateDevice
 				"endpointArn", device.EndpointArn,
 				"deviceToken", rq.DeviceToken,
 			)
-			return nil, fmt.Errorf("An error occurred while updating device endpoint: %w", err)
+			// return nil, fmt.Errorf("An error occurred while updating device endpoint: %w", err)
+			return nil, appErrors.NewApplicationError(
+				domainErrors.SNSUpdateEndpointFailed,
+				http.StatusBadRequest,
+				"An error occurred while updating device endpoint",
+				err,
+			)
 		}
 	}
 

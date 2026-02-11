@@ -10,6 +10,6 @@ type RegisterDeviceRequest struct {
 }
 
 type RegisterDeviceResponse struct {
-	DeviceId    string
-	EndpointArn string
+	DeviceId    string `json:"deviceId"`
+	EndpointArn string `json:"endpointArn"`
 }

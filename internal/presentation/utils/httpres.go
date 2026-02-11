@@ -3,6 +3,7 @@ package httpres
 import (
 	"encoding/json"
 	"lmbd-digital-push-notifications/internal/application/dtos"
+	appErrors "lmbd-digital-push-notifications/internal/application/errors"
 	"maps"
 	"net/http"
 
@@ -57,4 +58,11 @@ func Fail(status int, msg string, err string) events.APIGatewayProxyResponse {
 		Message: msg,
 		Error:   err,
 	}, nil)
+}
+
+func AppFail(err error) events.APIGatewayProxyResponse {
+	if appErr, ok := appErrors.AsApplicationError(err); ok {
+		return Fail(appErr.StatusCode, appErr.Message, appErr.Error())
+	}
+	return Fail(http.StatusInternalServerError, "internal server error", err.Error())
 }

@@ -11,5 +11,5 @@ type UpdateDeviceRequest struct {
 }
 
 type UpdateDeviceResponse struct {
-	DeviceId string
+	DeviceId string `json:"deviceId"`
 }

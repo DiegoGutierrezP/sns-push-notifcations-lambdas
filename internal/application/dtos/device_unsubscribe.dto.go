@@ -7,5 +7,12 @@ type DeviceUnsubscribeRequest struct {
 }
 
 type DeviceUnsubscribeResponse struct {
-	Devices []string `json:"devices"`
+	TopicArn        string                  `json:"topicArn"`
+	Unsubscriptions []DeviceUnsubscribedDto `json:"unsubscriptions"`
+}
+
+type DeviceUnsubscribedDto struct {
+	DeviceId        string `json:"deviceId"`
+	SubscriptionArn string `json:"subscriptionArn"`
+	Success         bool   `json:"success"`
 }

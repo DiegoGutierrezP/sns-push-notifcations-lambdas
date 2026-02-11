@@ -2,12 +2,14 @@ package usecases
 
 import (
 	"context"
-	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
 	"lmbd-digital-push-notifications/internal/application/dtos"
+	appErrors "lmbd-digital-push-notifications/internal/application/errors"
 	"lmbd-digital-push-notifications/internal/domain/entities"
+	domainErrors "lmbd-digital-push-notifications/internal/domain/errors"
 	"log/slog"
+	"net/http"
 )
 
 type IRegisterDeviceUseCase interface {
@@ -51,12 +53,24 @@ func (uc *RegisterDeviceUseCase) Execute(ctx context.Context, request dtos.Regis
 			"requestId", requestID,
 			"err", err,
 		)
-		return nil, fmt.Errorf("An Error occurred while checking if device token exists: %w", err)
+		// return nil, fmt.Errorf("An Error occurred while checking if device token exists: %w", err)
+		return nil, appErrors.NewApplicationError(
+			domainErrors.DDBQueryFailed,
+			http.StatusBadRequest,
+			"An Error occurred while checking if device token exists",
+			err,
+		)
 	}
 
 	if exists {
 		uc.logger.Error("Device token already registered", "requestId", requestID)
-		return nil, fmt.Errorf("token already registered")
+		// return nil, fmt.Errorf("token already registered")
+		return nil, appErrors.NewApplicationError(
+			domainErrors.DEVTokenAlreadyExists,
+			http.StatusBadRequest,
+			"Device token already registered",
+			nil,
+		)
 	}
 
 	// create endpoint arn for new devices
@@ -67,7 +81,13 @@ func (uc *RegisterDeviceUseCase) Execute(ctx context.Context, request dtos.Regis
 			"requestId", requestID,
 			"err", err,
 		)
-		return nil, fmt.Errorf("An error occurred while creating endpoint ARN: %w", err)
+		// return nil, fmt.Errorf("An error occurred while creating endpoint ARN: %w", err)
+		return nil, appErrors.NewApplicationError(
+			domainErrors.SNSCreateEndpointFailed,
+			http.StatusBadRequest,
+			"An error occurred while creating endpoint",
+			err,
+		)
 	}
 
 	uc.logger.Info("Endpoint created",
@@ -92,7 +112,13 @@ func (uc *RegisterDeviceUseCase) Execute(ctx context.Context, request dtos.Regis
 			"requestId", requestID,
 			"err", err,
 		)
-		return nil, fmt.Errorf("An error occurred while registering device: %w", err)
+		// return nil, fmt.Errorf("An error occurred while registering device: %w", err)
+		return nil, appErrors.NewApplicationError(
+			domainErrors.DDBInsertFailed,
+			http.StatusBadRequest,
+			"An error occurred while registering device",
+			err,
+		)
 	}
 
 	uc.logger.Info("Device registered successfully",

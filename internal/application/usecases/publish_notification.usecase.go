@@ -3,12 +3,14 @@ package usecases
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
 	"lmbd-digital-push-notifications/internal/application/dtos"
+	appErrors "lmbd-digital-push-notifications/internal/application/errors"
 	"lmbd-digital-push-notifications/internal/domain/constants"
+	domainErrors "lmbd-digital-push-notifications/internal/domain/errors"
 	"log/slog"
+	"net/http"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns/types"
@@ -48,7 +50,13 @@ func (uc *PublishNotificationUseCase) Execute(ctx context.Context, rq dtos.Publi
 	if rq.TargetArn == nil && rq.TopicArn == nil {
 		uc.logger.Error("targetArn and topicArn are empty")
 
-		return nil, fmt.Errorf("targetArn or topicArn is required")
+		// return nil, fmt.Errorf("targetArn or topicArn is required")
+		return nil, appErrors.NewApplicationError(
+			domainErrors.APIMissingParams,
+			http.StatusBadRequest,
+			"targetArn and topicArn are empty",
+			nil,
+		)
 	}
 
 	pushMessage, publishOptions := uc.buildPushMessage(rq.Title, rq.Body, rq.Data, rq.Attributes)
@@ -72,7 +80,13 @@ func (uc *PublishNotificationUseCase) Execute(ctx context.Context, rq dtos.Publi
 
 		notificationRequestDto.Status = constants.NotificationRequestStatusFailed
 
-		return nil, fmt.Errorf("An error occurred while publishing notification: %w", err)
+		// return nil, fmt.Errorf("An error occurred while publishing notification: %w", err)
+		return nil, appErrors.NewApplicationError(
+			domainErrors.SNSPublishFailed,
+			http.StatusBadRequest,
+			"An error occurred while publishing notification",
+			err,
+		)
 	}
 
 	if rq.TopicArn != nil {

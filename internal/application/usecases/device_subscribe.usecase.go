@@ -3,12 +3,14 @@ package usecases
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"lmbd-digital-push-notifications/internal/application/contracts/repositories"
 	"lmbd-digital-push-notifications/internal/application/contracts/services"
 	"lmbd-digital-push-notifications/internal/application/dtos"
+	appErrors "lmbd-digital-push-notifications/internal/application/errors"
 	"lmbd-digital-push-notifications/internal/domain/entities"
+	domainErrors "lmbd-digital-push-notifications/internal/domain/errors"
 	"log/slog"
+	"net/http"
 )
 
 type IDeviceSubscribeUseCase interface {
@@ -53,7 +55,13 @@ func (uc *DeviceSubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceSub
 			"calimacoId", rq.CalimacoId,
 			"err", err,
 		)
-		return nil, fmt.Errorf("An error occurred, searching devices for calimaco id %d", rq.CalimacoId)
+		// return nil, fmt.Errorf("An error occurred, searching devices for calimaco id %d", rq.CalimacoId)
+		return nil, appErrors.NewApplicationError(
+			domainErrors.DDBQueryFailed,
+			http.StatusBadRequest,
+			"An error occurred, searching devices",
+			err,
+		)
 	}
 
 	uc.logger.Info("Total devices found ",
@@ -67,7 +75,13 @@ func (uc *DeviceSubscribeUseCase) Execute(ctx context.Context, rq dtos.DeviceSub
 			"requestId", requestID,
 			"calimacoId", rq.CalimacoId,
 		)
-		return nil, fmt.Errorf("No devices found for calimaco id %d", rq.CalimacoId)
+		// return nil, fmt.Errorf("No devices found for calimaco id %d", rq.CalimacoId)
+		return nil, appErrors.NewApplicationError(
+			domainErrors.DEVUserWithoutDevices,
+			http.StatusNotFound,
+			"No devices found",
+			err,
+		)
 	}
 
 	subscriptionAttributes := services.SnsSubscriptionAttributes{
