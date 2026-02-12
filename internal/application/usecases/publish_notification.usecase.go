@@ -64,7 +64,7 @@ func (uc *PublishNotificationUseCase) Execute(ctx context.Context, rq dtos.Publi
 	notificationRequestDto := repositories.NotificationRequestRegisterDto{
 		TopicArn:  rq.TopicArn,
 		TargetArn: rq.TargetArn,
-		Title:     *rq.Title,
+		Title:     rq.Title,
 		Body:      rq.Body,
 		Status:    constants.NotificationRequestStatusPending,
 	}
@@ -127,7 +127,7 @@ func (uc *PublishNotificationUseCase) Execute(ctx context.Context, rq dtos.Publi
 }
 
 func (uc *PublishNotificationUseCase) buildPushMessage(
-	title *string,
+	title string,
 	body string,
 	data map[string]string,
 	attributes map[string]string,
@@ -172,7 +172,7 @@ func (uc *PublishNotificationUseCase) buildPushMessage(
 
 	// Opciones de publicación
 	opts := services.SnsPublishOptions{
-		Subject: aws.String(*title),
+		Subject: aws.String(title),
 		// Esto lo sobreescribe Publish() si targetArn != nil
 		MessageStructure: aws.String("json"),
 	}

@@ -4,83 +4,98 @@ import (
 	"context"
 	"encoding/json"
 	"lmbd-digital-push-notifications/internal/application/dtos"
-	appErrors "lmbd-digital-push-notifications/internal/application/errors"
 	"lmbd-digital-push-notifications/internal/application/usecases"
 	validation "lmbd-digital-push-notifications/internal/application/validations"
-	domainErrors "lmbd-digital-push-notifications/internal/domain/errors"
-	httpres "lmbd-digital-push-notifications/internal/presentation/utils"
-	"net/http"
+	"log/slog"
 
 	"github.com/aws/aws-lambda-go/events"
 )
 
 type PublishNotificationHandler struct {
 	usecase usecases.IPublishNotificationUseCase
+	logger  *slog.Logger
 }
 
 func NewSendNotificationHandler(
 	usecase usecases.IPublishNotificationUseCase,
+	logger *slog.Logger,
 ) *PublishNotificationHandler {
 	return &PublishNotificationHandler{
 		usecase: usecase,
+		logger:  logger,
 	}
 }
 
 func (h *PublishNotificationHandler) Handler(
 	ctx context.Context,
-	req events.APIGatewayProxyRequest,
-) (events.APIGatewayProxyResponse, error) {
-	ctx = context.WithValue(ctx, "RequestID", req.RequestContext.RequestID)
+	evt events.SQSEvent,
+) {
+	for _, rec := range evt.Records {
 
-	var payload dtos.PublishNotificationRequest
+		h.logger.Info("Processing message",
+			"messageId", rec.MessageId,
+			"body", rec.Body,
+		)
 
-	if err := json.Unmarshal([]byte(req.Body), &payload); err != nil {
-		return httpres.AppFail(appErrors.NewApplicationError(
-			domainErrors.APIInvalidRequestFormat,
-			http.StatusBadRequest,
-			"Request inválido",
-		)), nil
+		var payload dtos.PublishNotificationRequest
+
+		if err := json.Unmarshal([]byte(rec.Body), &payload); err != nil {
+			h.logger.Error("Invalid request format",
+				"messageId", rec.MessageId,
+				"err", err,
+			)
+			continue
+		}
+
+		if err := validation.Validate.Struct(payload); err != nil {
+			h.logger.Error("Invalid request parameters",
+				"messageId", rec.MessageId,
+				"validations", validation.StringValidationErrors(err),
+				"err", err,
+			)
+			continue
+		}
+
+		_, err := h.usecase.Execute(ctx, payload)
+
+		if err != nil {
+			h.logger.Error("usecase excution failed",
+				"messageId", rec.MessageId,
+				"err", err,
+			)
+		}
 	}
-
-	if err := validation.Validate.Struct(payload); err != nil {
-		return httpres.AppFail(appErrors.NewApplicationError(
-			domainErrors.APIInvalidRequestFormat,
-			http.StatusUnprocessableEntity,
-			validation.StringValidationErrors(err),
-		)), nil
-	}
-
-	data, err := h.usecase.Execute(ctx, payload)
-
-	if err != nil {
-		return httpres.AppFail(err), nil
-	}
-
-	return httpres.Success(http.StatusOK, "Notificación enviada", data), nil
 }
 
 // func (h *PublishNotificationHandler) Handler(
 // 	ctx context.Context,
-// 	evt events.SQSEvent,
-// ) {
-// 	for _, rec := range evt.Records {
+// 	req events.APIGatewayProxyRequest,
+// ) (events.APIGatewayProxyResponse, error) {
+// 	ctx = context.WithValue(ctx, "RequestID", req.RequestContext.RequestID)
 
-// 		log.Println("Processing message:", rec.Body)
+// 	var payload dtos.PublishNotificationRequest
 
-// 		var payload dtos.PublishNotificationRequest
-
-// 		if err := json.Unmarshal([]byte(rec.Body), &payload); err != nil {
-// 			log.Printf("Request inválido, messageId=%s: %v", rec.MessageId, err)
-// 			continue
-// 		}
-
-// 		if err := validation.Validate.Struct(payload); err != nil {
-// 			log.Printf("Request inválido validacion fallida, messageId=%s: %v", rec.MessageId, err)
-// 			continue
-// 		}
-
-// 		if err := h.usecase.Execute(ctx, payload); err != nil {
-// 			log.Printf("falló messageId=%s: %v", rec.MessageId, err)
-// 		}
+// 	if err := json.Unmarshal([]byte(req.Body), &payload); err != nil {
+// 		return httpres.AppFail(appErrors.NewApplicationError(
+// 			domainErrors.APIInvalidRequestFormat,
+// 			http.StatusBadRequest,
+// 			"Request inválido",
+// 		)), nil
 // 	}
+
+// 	if err := validation.Validate.Struct(payload); err != nil {
+// 		return httpres.AppFail(appErrors.NewApplicationError(
+// 			domainErrors.APIInvalidRequestFormat,
+// 			http.StatusUnprocessableEntity,
+// 			validation.StringValidationErrors(err),
+// 		)), nil
+// 	}
+
+// 	data, err := h.usecase.Execute(ctx, payload)
+
+// 	if err != nil {
+// 		return httpres.AppFail(err), nil
+// 	}
+
+// 	return httpres.Success(http.StatusOK, "Notificación enviada", data), nil
 // }

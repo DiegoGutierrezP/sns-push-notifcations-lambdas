@@ -10,7 +10,7 @@ import (
 	"io"
 	"lmbd-digital-push-notifications/internal/application/dtos"
 	"lmbd-digital-push-notifications/internal/application/usecases"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -37,13 +37,16 @@ type cwLogsLogEvent struct {
 
 type DeliveryLogProcessorHandler struct {
 	usecase usecases.ISaveDeliveryStatusLogUseCase
+	logger  *slog.Logger
 }
 
 func NewDeliveryLogProcessorHandler(
 	usecase usecases.ISaveDeliveryStatusLogUseCase,
+	logger *slog.Logger,
 ) *DeliveryLogProcessorHandler {
 	return &DeliveryLogProcessorHandler{
 		usecase: usecase,
+		logger:  logger,
 	}
 }
 
@@ -55,28 +58,43 @@ func (h *DeliveryLogProcessorHandler) Handler(
 	// 1) decode base64 + gzip
 	raw, err := base64.StdEncoding.DecodeString(evt.AWSLogs.Data)
 	if err != nil {
+		h.logger.Error("base64 decode awslogs.data failed",
+			"err", err,
+		)
 		return fmt.Errorf("base64 decode awslogs.data: %w", err)
 	}
 
 	unzipped, err := gunzip(raw)
 	if err != nil {
+		h.logger.Error("gunzip awslogs.data failed",
+			"err", err,
+		)
 		return fmt.Errorf("gunzip awslogs.data: %w", err)
 	}
 
 	// 2) unmarshal envelope CloudWatch Logs
 	var payload cwLogsPayload
 	if err := json.Unmarshal(unzipped, &payload); err != nil {
+		h.logger.Error("unmarshal cloudwatch logs payload failed",
+			"err", err,
+		)
 		return fmt.Errorf("unmarshal cloudwatch logs payload: %w", err)
 	}
 
 	// 3) process each logEvent.message (SNS delivery JSON)
 	for _, le := range payload.LogEvents {
-
-		fmt.Printf("Processing logEventId=%s message=%s\n", le.ID, le.Message)
+		h.logger.Info("Processiong log event",
+			"logEventId", le.ID,
+			"message", le.Message,
+		)
 
 		var dl dtos.SnsDeliveryLog
 		if err := json.Unmarshal([]byte(le.Message), &dl); err != nil {
-			log.Printf("skip: invalid sns delivery json, logEventId=%s err=%v message=%q", le.ID, err, le.Message)
+			h.logger.Error("skip: invalid sns delivery json",
+				"logEventId", le.ID,
+				"message", le.Message,
+				"err", err,
+			)
 			continue
 		}
 
@@ -94,8 +112,12 @@ func (h *DeliveryLogProcessorHandler) Handler(
 
 		if err := h.usecase.Execute(ctx, in); err != nil {
 
-			log.Printf("failed to persist logEventId=%s messageId=%s endpoint=%s err=%v",
-				le.ID, in.MessageID, in.EndpointArn, err)
+			h.logger.Error("failed to persist log",
+				"logEventId", le.ID,
+				"message", le.Message,
+				"enpoint", in.EndpointArn,
+				"err", err,
+			)
 
 			continue
 		}

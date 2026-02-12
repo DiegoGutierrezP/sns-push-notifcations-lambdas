@@ -39,7 +39,7 @@ func main() {
 // 	evt := events.SQSEvent{
 // 		Records: []events.SQSMessage{
 // 			// {MessageId: "1", Body: `{"targetArn":"arn:aws:sns:us-east-1:418274024107:endpoint/GCM/IncidenciasTest/e7873244-d148-3f70-b4e5-1cb2fc037e61", "body": "Este es el mensaje 1"}`},
-// 			{MessageId: "12", Body: `{"topicArn":"arn:aws:sns:us-east-1:418274024107:football-events", "body": "Este es el mensaje desde un TOPICO"}`},
+// 			{MessageId: "12", Body: `{"topicArn":"arn:aws:sns:us-east-1:418274024107:football-events","title":"title", "body": "Este es el mensaje desde un TOPICO"}`},
 // 		},
 // 	}
 
